@@ -1,0 +1,2 @@
+D:/projects/ITATS/classroom_itats_mobile/android/app/.cxx/RelWithDebInfo/1w4t6k1p/armeabi-v7a/CMakeFiles/edit_cache.dir
+D:/projects/ITATS/classroom_itats_mobile/android/app/.cxx/RelWithDebInfo/1w4t6k1p/armeabi-v7a/CMakeFiles/rebuild_cache.dir

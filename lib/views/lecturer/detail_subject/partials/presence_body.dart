@@ -1,0 +1,263 @@
+import 'package:classroom_itats_mobile/auth/repositories/user_repository.dart';
+import 'package:classroom_itats_mobile/models/lecture.dart';
+import 'package:classroom_itats_mobile/models/subject.dart';
+import 'package:classroom_itats_mobile/user/bloc/lecture/lecture_bloc.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:accordion/accordion.dart';
+import 'package:accordion/controllers.dart';
+import 'package:intl/intl.dart';
+
+class LecturePresenceBody extends StatefulWidget {
+  final Subject subject;
+  final UserRepository userRepository;
+  const LecturePresenceBody(
+      {super.key, required this.subject, required this.userRepository});
+
+  @override
+  State<LecturePresenceBody> createState() => _LecturePresenceBodyState();
+}
+
+class _LecturePresenceBodyState extends State<LecturePresenceBody> {
+  // Subject? _subject;
+  static const headerStyle =
+      TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold);
+  static const contentStyle = TextStyle(
+      color: Colors.black, fontSize: 14, fontWeight: FontWeight.normal);
+
+  @override
+  void initState() {
+    super.initState();
+
+    _checkLoad();
+  }
+
+  _checkLoad() async {
+    bool loaded =
+        await widget.userRepository.getWidgetState('lecturer_presence');
+    if (!loaded) {
+      setState(() {
+        BlocProvider.of<LectureBloc>(context).add(GetLecture(
+          academicPeriod: widget.subject.academicPeriodId,
+          subjectId: widget.subject.subjectId,
+          subjectClass: widget.subject.subjectClass,
+        ));
+      });
+      await widget.userRepository.setWidgetState('lecturer_presence', true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width * 0.8;
+
+    return BlocConsumer<LectureBloc, LectureState>(
+      listener: (context, state) {},
+      builder: (context, state) {
+        return Placeholder(
+          color: const Color.fromRGBO(0, 0, 0, 0),
+          child: RefreshIndicator(
+            child: Accordion(
+              headerBorderColor: Colors.grey,
+              headerBorderWidth: 1,
+              headerBorderColorOpened: Colors.grey,
+              headerBackgroundColorOpened: Colors.white,
+              contentBackgroundColor: Colors.white,
+              contentBorderColor: Colors.grey,
+              contentBorderWidth: 1,
+              contentHorizontalPadding: 20,
+              scaleWhenAnimating: true,
+              openAndCloseAnimation: true,
+              headerPadding:
+                  const EdgeInsets.symmetric(vertical: 20, horizontal: 15),
+              sectionOpeningHapticFeedback: SectionHapticFeedback.heavy,
+              sectionClosingHapticFeedback: SectionHapticFeedback.light,
+              headerBackgroundColor: Colors.white,
+              children: state is LectureLoaded
+                  ? accordionList(
+                      headerStyle,
+                      state.lecturerLectures,
+                      widget.subject,
+                      contentStyle,
+                      screenWidth,
+                      context,
+                    )
+                  : accordionList(
+                      headerStyle,
+                      List<List<Lecture>>.empty(),
+                      widget.subject,
+                      contentStyle,
+                      screenWidth,
+                      context,
+                    ),
+            ),
+            onRefresh: () async {
+              await Future<void>.delayed(const Duration(milliseconds: 1000));
+
+              setState(() {
+                BlocProvider.of<LectureBloc>(context).add(GetLecture(
+                  academicPeriod: widget.subject.academicPeriodId,
+                  subjectId: widget.subject.subjectId,
+                  subjectClass: widget.subject.subjectClass,
+                ));
+              });
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+List<AccordionSection> accordionList(
+    TextStyle headerStyle,
+    List<List<Lecture>> lectures,
+    Subject subject,
+    TextStyle contentStyle,
+    double screenWidth,
+    context) {
+  List<AccordionSection> accordions = List.empty(growable: true);
+
+  for (var i = 0; i < 16; i++) {
+    accordions.add(
+      AccordionSection(
+        isOpen: false,
+        contentVerticalPadding: 10,
+        leftIcon: const Icon(Icons.domain_verification_rounded,
+            color: Colors.black, size: 30),
+        rightIcon:
+            const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.black),
+        header: Text("Minggu ke - ${i + 1}", style: headerStyle),
+        content: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: screenWidth,
+              height: (58.0 *
+                  (i == 7 || i == 15 ? 1 : subject.subjectSchedule.length)),
+              child: ListView.separated(
+                itemBuilder: (context, index) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        children: [
+                          Text(
+                              "[${subject.subjectSchedule[index]["subject_type"]}] ${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subject.subjectSchedule[index]["time_start"]))}-${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subject.subjectSchedule[index]["time_end"]))}",
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16)),
+                        ],
+                      ),
+                      Column(
+                        children: [
+                          SizedBox(
+                            width: screenWidth * 0.5,
+                            child: ElevatedButton(
+                              style: const ButtonStyle(
+                                backgroundColor: MaterialStatePropertyAll(
+                                  Colors.red,
+                                ),
+                              ),
+                              onPressed: () {},
+                              child: const Text(
+                                "Belum Waktunya Pelaporan",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
+                separatorBuilder: (context, index) {
+                  return const Divider();
+                },
+                itemCount:
+                    i == 7 || i == 15 ? 1 : subject.subjectSchedule.length,
+              ),
+            ),
+          ],
+        ),
+        onOpenSection: () {},
+      ),
+    );
+  }
+
+  if (lectures.isNotEmpty) {
+    for (var lecture in lectures) {
+      accordions[lecture[0].weekID! - 1] = AccordionSection(
+        isOpen: false,
+        contentVerticalPadding: 10,
+        leftIcon: const Icon(Icons.domain_verification_rounded,
+            color: Colors.black, size: 30),
+        rightIcon:
+            const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.black),
+        header: Text("Minggu ke - ${lecture[0].weekID}", style: headerStyle),
+        content: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: screenWidth,
+              height: (58.0 * lecture.length),
+              child: ListView.separated(
+                itemBuilder: (context, index) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        children: [
+                          Text(
+                              "[${subject.subjectSchedule[index]["subject_type"]}] ${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subject.subjectSchedule[index]["time_start"]))}-${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subject.subjectSchedule[index]["time_end"]))}",
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16)),
+                        ],
+                      ),
+                      Column(
+                        children: [
+                          SizedBox(
+                            width: screenWidth * 0.5,
+                            child: ElevatedButton(
+                              style: const ButtonStyle(
+                                backgroundColor: MaterialStatePropertyAll(
+                                  Colors.amber,
+                                ),
+                              ),
+                              onPressed: () {},
+                              child: Text(
+                                "${lecture[index].presenceStudent} Mahasiswa Sudah Presensi",
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 12,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
+                separatorBuilder: (context, index) {
+                  return const Divider();
+                },
+                itemCount: lecture.length,
+              ),
+            ),
+          ],
+        ),
+        onOpenSection: () {},
+      );
+    }
+  }
+
+  return accordions;
+}

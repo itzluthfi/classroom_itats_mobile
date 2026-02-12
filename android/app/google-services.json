@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "871324361748",
+    "project_id": "classroomitats",
+    "storage_bucket": "classroomitats.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:871324361748:android:176ff6bc3198daf8cbb301",
+        "android_client_info": {
+          "package_name": "com.example.classroom_itats_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-wKMP6nww9dPkuFmhBOC2ss81xnkTZRI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:871324361748:android:b0d1ef4e2fcdd341cbb301",
+        "android_client_info": {
+          "package_name": "com.itats.classroom_itats_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-wKMP6nww9dPkuFmhBOC2ss81xnkTZRI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
