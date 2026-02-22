@@ -9,13 +9,15 @@ sealed class SubjectEvent extends Equatable {
 
 class GetSubject extends SubjectEvent {
   final BuildContext context;
+  final String? period; // Added optional period
 
   const GetSubject({
     required this.context,
+    this.period,
   });
 
   @override
-  List<Object> get props => [context];
+  List<Object> get props => [context, if (period != null) period!];
 
   @override
   String toString() => "GetSubject";

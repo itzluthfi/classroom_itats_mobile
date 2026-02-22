@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as dev;
 import 'dart:math';
 
 import 'package:classroom_itats_mobile/models/percentage_score.dart';
@@ -19,7 +20,7 @@ class SubjectRepository {
       aOptions: AndroidOptions(encryptedSharedPreferences: true));
   final _dio = Dio();
 
-  Future<List<Subject>> getSubjects() async {
+  Future<List<Subject>> getSubjects({String? period}) async {
     final value = await storage.read(key: "token");
     final role = await storage.read(key: "role");
     String roleUrl = "";
@@ -31,8 +32,16 @@ class SubjectRepository {
       roleUrl = "lecturers";
     }
 
+    String url =
+        "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/$roleUrl/subjects";
+
+    // If period is provided, append it to the URL
+    if (period != null && period.isNotEmpty) {
+      url += "?period=$period";
+    }
+
     Response response = await _dio.get(
-      "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/$roleUrl/subjects",
+      url,
       options: Options(
         contentType: "application/json",
         headers: {"token": value},
@@ -40,6 +49,15 @@ class SubjectRepository {
     );
 
     final decodedData = jsonDecode(jsonEncode(response.data["data"])) as List;
+    print("========== API DEBUG: getSubjects ==========");
+    try {
+      final prettyString =
+          const JsonEncoder.withIndent('  ').convert(decodedData);
+      print(prettyString);
+    } catch (e) {
+      print("Failed to pretty print: $decodedData");
+    }
+    print("============================================");
 
     final subjects = decodedData.map((data) => Subject.fromJson(data)).toList();
 
@@ -71,6 +89,8 @@ class SubjectRepository {
     );
 
     final decodedData = response.data["data"] as List;
+    dev.log(
+        "DEBUG API getSubjectsFiltered: $decodedData"); // Added for debugging
 
     final subjects = decodedData.map((data) => Subject.fromJson(data)).toList();
 

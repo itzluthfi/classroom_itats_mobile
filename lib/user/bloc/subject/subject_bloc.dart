@@ -18,7 +18,8 @@ class SubjectBloc extends Bloc<SubjectEvent, SubjectState> {
     on<GetSubject>((event, emit) async {
       emit(SubjectLoading());
       try {
-        final List<Subject> subjects = await subjectRepository.getSubjects();
+        final List<Subject> subjects =
+            await subjectRepository.getSubjects(period: event.period);
 
         final data =
             await subjectRepository.subjectView(subjects, event.context);

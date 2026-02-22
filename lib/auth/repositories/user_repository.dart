@@ -84,6 +84,9 @@ class UserRepository {
 
   Future<int> storeLoginUser(String fbt) async {
     var token = await storage.read(key: "token");
+    print("========== DEBUG: storeLoginUser ==========");
+    print("Mobile Token (FBT): $fbt");
+    print("===========================================");
 
     Response response = await _dio.put(
       "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/login/info",

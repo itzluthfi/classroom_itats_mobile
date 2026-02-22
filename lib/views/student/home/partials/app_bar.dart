@@ -2,6 +2,7 @@ import 'package:classroom_itats_mobile/auth/bloc/auth/auth_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/academic_period/academic_period_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/subject/subject.dart';
 import 'package:classroom_itats_mobile/user/repositories/academic_period_repository.dart';
+import 'package:classroom_itats_mobile/utils/semester_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,8 +36,8 @@ class _StudentAppBarState extends State<StudentAppBar> {
     final academicPeriod = prefs.getString("current_academic_period");
 
     setState(() {
-      BlocProvider.of<SubjectBloc>(context).add(FilterButtonPressed(
-          academicPeriod: academicPeriod ?? "", major: "", context: context));
+      BlocProvider.of<SubjectBloc>(context)
+          .add(GetSubject(period: academicPeriod ?? "", context: context));
     });
   }
 
@@ -61,57 +62,65 @@ class _StudentAppBarState extends State<StudentAppBar> {
               content: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  BlocConsumer<AcademicPeriodBloc, AcademicPeriodState>(
-                      listener: (context, state) {
-                    if (state is AcademicPeriodLoadFailed) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content:
-                              const Text('Gagal Menampilkan Periode Akademik'),
-                          duration: const Duration(milliseconds: 1500),
-                          width: 280.0, // Width of the SnackBar.
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10.0,
-                            vertical:
-                                8.0, // Inner padding for SnackBar content.
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10.0),
-                          ),
-                        ),
-                      );
+                  BlocBuilder<AuthBloc, AuthState>(
+                      builder: (context, authState) {
+                    String userNpm = "";
+                    if (authState is AuthAuthenticated) {
+                      userNpm = authState.user.name;
                     }
-                  }, builder: (context, state) {
-                    return DropdownMenu<String>(
-                      textStyle: const TextStyle(
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      menuStyle: const MenuStyle(
-                        fixedSize: MaterialStatePropertyAll(
-                          Size.fromWidth(200),
+                    return BlocConsumer<AcademicPeriodBloc,
+                        AcademicPeriodState>(listener: (context, state) {
+                      if (state is AcademicPeriodLoadFailed) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text(
+                                'Gagal Menampilkan Periode Akademik'),
+                            duration: const Duration(milliseconds: 1500),
+                            width: 280.0, // Width of the SnackBar.
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10.0,
+                              vertical:
+                                  8.0, // Inner padding for SnackBar content.
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                          ),
+                        );
+                      }
+                    }, builder: (context, state) {
+                      return DropdownMenu<String>(
+                        textStyle: const TextStyle(
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maximumSize: MaterialStatePropertyAll(
-                          Size.fromWidth(200),
+                        menuStyle: const MenuStyle(
+                          fixedSize: MaterialStatePropertyAll(
+                            Size.fromWidth(200),
+                          ),
+                          maximumSize: MaterialStatePropertyAll(
+                            Size.fromWidth(200),
+                          ),
                         ),
-                      ),
-                      width: 200,
-                      initialSelection: state is AcademicPeriodLoaded
-                          ? state.currentAcademicPeriod
-                          : "",
-                      label: const Text("Tahun Ajaran"),
-                      onSelected: (String? value) {
-                        widget.academicPeriodRepository
-                            .setAcademicPeriod(value ?? "");
-                      },
-                      dropdownMenuEntries: state is AcademicPeriodLoaded
-                          ? state.academicPeriod
-                              .map((value) => DropdownMenuEntry(
-                                  value: value.academicPeriodId,
-                                  label: value.academicPeriodDecription))
-                              .toList()
-                          : [],
-                    );
+                        width: 200,
+                        initialSelection: state is AcademicPeriodLoaded
+                            ? state.currentAcademicPeriod
+                            : "",
+                        label: const Text("Tahun Ajaran"),
+                        onSelected: (String? value) {
+                          widget.academicPeriodRepository
+                              .setAcademicPeriod(value ?? "");
+                        },
+                        dropdownMenuEntries: state is AcademicPeriodLoaded
+                            ? state.academicPeriod
+                                .map((value) => DropdownMenuEntry(
+                                    value: value.academicPeriodId,
+                                    label:
+                                        "${SemesterHelper.calculateSemester(userNpm, value.yearStart, value.oddEven)} (${value.yearStart} ${value.oddEven})"))
+                                .toList()
+                            : [],
+                      );
+                    });
                   }),
                 ],
               ),

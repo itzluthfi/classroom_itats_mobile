@@ -45,8 +45,8 @@ class _CreateForumPageState extends State<CreateForumPage> {
       if (_mapped?["announcement"] != null) {
         if (_mapped?["announcement"] is Announcement) {
           _announcement = _mapped?["announcement"] as Announcement;
-          var delta = HtmlToDelta().convert(_announcement!.postContent,
-              transformTableAsEmbed: false);
+
+          var delta = HtmlToDelta().convert(_announcement!.postContent);
 
           var deltaJson = delta.toJson();
 
@@ -87,7 +87,6 @@ class _CreateForumPageState extends State<CreateForumPage> {
                   CreateForum(
                     deltaOps: deltaOps,
                     activityMasterId: _subject!.activityMasterId,
-                    // forumContent: html,
                     createdAt: "${DateTime.now().toLocal().toIso8601String()}Z",
                     updatedAt: "${DateTime.now().toLocal().toIso8601String()}Z",
                   ),
@@ -98,7 +97,6 @@ class _CreateForumPageState extends State<CreateForumPage> {
                     announcementId: _announcement!.announcementId,
                     deltaOps: deltaOps,
                     activityMasterId: _subject!.activityMasterId,
-                    // forumContent: html,
                     createdAt: "${DateTime.now().toLocal().toIso8601String()}Z",
                     updatedAt: "${DateTime.now().toLocal().toIso8601String()}Z",
                   ),
@@ -117,12 +115,11 @@ class _CreateForumPageState extends State<CreateForumPage> {
             Icons.send_rounded,
             color: Colors.white,
           )),
-      body: QuillEditorProvider(
-          child: Column(
+      body: Column(
         children: [
           QuillToolbar.simple(
-            controller: _controller,
             configurations: QuillSimpleToolbarConfigurations(
+              controller: _controller,
               embedButtons: FlutterQuillEmbeds.toolbarButtons(),
               buttonOptions: const QuillSimpleToolbarButtonOptions(),
               sharedConfigurations: const QuillSharedConfigurations(),
@@ -132,8 +129,8 @@ class _CreateForumPageState extends State<CreateForumPage> {
             child: Padding(
               padding: const EdgeInsets.all(10),
               child: QuillEditor.basic(
-                controller: _controller,
                 configurations: QuillEditorConfigurations(
+                  controller: _controller,
                   embedBuilders: FlutterQuillEmbeds.editorBuilders(),
                   expands: true,
                   scrollable: true,
@@ -143,32 +140,7 @@ class _CreateForumPageState extends State<CreateForumPage> {
             ),
           ),
         ],
-      )),
+      ),
     );
   }
 }
-// QuillEditorProvider(
-//         controller: _controller,
-//         child: Column(
-//           children: [
-//             QuillToolbar(
-//               configurations: const QuillToolbarConfigurations(
-//                   buttonOptions: QuillSimpleToolbarButtonOptions(),
-//                   sharedConfigurations: QuillSharedConfigurations()),
-//               child: build(context),
-//             ),
-//             Expanded(
-//               child: Padding(
-//                 padding: const EdgeInsets.all(10),
-//                 child: QuillEditor.basic(
-//                   configurations: QuillEditorConfigurations(
-//                       embedBuilders: FlutterQuillEmbeds.editorBuilders(),
-//                       expands: true,
-//                       scrollable: true,
-//                       checkBoxReadOnly: true),
-//                 ),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),

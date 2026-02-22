@@ -47,6 +47,7 @@ import 'package:classroom_itats_mobile/user/bloc/subject/subject_bloc.dart';
 import 'package:classroom_itats_mobile/user/repositories/academic_period_repository.dart';
 import 'package:classroom_itats_mobile/user/repositories/subject_repository.dart';
 import 'package:classroom_itats_mobile/views/lecturer/home/home_page.dart';
+import 'package:classroom_itats_mobile/views/student/student_main_wrapper.dart';
 import 'package:classroom_itats_mobile/views/student/detail_subject/assigment_page.dart';
 import 'package:classroom_itats_mobile/views/student/home/home_page.dart';
 import 'package:classroom_itats_mobile/views/student/profile/profile_page.dart';
@@ -62,6 +63,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
 
   await _initFirebase();
@@ -87,14 +89,21 @@ void main() async {
       SubjectMemberRepository();
   final ProfileRepository profileRepository = ProfileRepository();
 
-  final prefs = await SharedPreferences.getInstance();
+  // ✅ FIX: Wrap SharedPreferences dengan try-catch
+  // agar app tidak hang jika plugin registrant gagal
+  SharedPreferences? prefs;
+  try {
+    prefs = await SharedPreferences.getInstance();
+  } catch (e) {
+    log('SharedPreferences failed to initialize: $e');
+  }
 
-  WidgetsFlutterBinding.ensureInitialized();
   await NotificationService().initNotification();
 
   await initializeDateFormatting("id_ID", null);
 
-  if (prefs.getStringList("application_images") == null) {
+  // ✅ FIX: Null-safe check untuk prefs
+  if (prefs != null && prefs.getStringList("application_images") == null) {
     _storeImage(prefs);
   }
 
@@ -227,7 +236,6 @@ class MyApp extends StatelessWidget {
     required this.majorRepository,
   });
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -237,12 +245,21 @@ class MyApp extends StatelessWidget {
           if (state is AuthAuthenticated)
             {
               if (state.authenticatedAs == AuthenticatedAs.student)
-                {Navigator.of(context).pushNamed("/student/home")}
+                {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                      "/student/home", (route) => route.isFirst)
+                }
               else if (state.authenticatedAs == AuthenticatedAs.lecturer)
-                {Navigator.of(context).pushNamed("/lecturer/home")}
+                {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                      "/lecturer/home", (route) => route.isFirst)
+                }
             }
           else if (state is AuthUnauthenticated)
-            {Navigator.of(context).pushNamed("/login")}
+            {
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil("/login", (route) => route.isFirst)
+            }
           else if (state is AuthLoading)
             {
               const Scaffold(
@@ -273,8 +290,8 @@ class MyApp extends StatelessWidget {
       ),
       routes: {
         "/login": (context) => LoginPage(userRepository: userRepository),
-        "/student/home": (context) =>
-            StudentHomePage(academicPeriodRepository: academicPeriodRepository),
+        "/student/home": (context) => StudentMainWrapper(
+            academicPeriodRepository: academicPeriodRepository),
         "/student/subject": (context) => StudentSubjectPage(
               subjectRepository: subjectRepository,
               userRepository: userRepository,
@@ -326,22 +343,6 @@ void _storeImage(SharedPreferences prefs) async {
 }
 
 Future<void> _initFirebase() async {
-  // await Firebase.initializeApp(
-  //   options: DefaultFirebaseOptions.currentPlatform,
-  // );
-  // try {
-  //   var notif = FlutterNotificationChannel();
-  //   var _ = await notif.registerNotificationChannel(
-  //     description: 'Classroom Itats Notification',
-  //     id: 'classroom_itats_notification',
-  //     importance: NotificationImportance.IMPORTANCE_HIGH,
-  //     name: 'Classroom Itats Notification',
-  //   );
-  // } catch (e, stackTrace) {
-  //   log(e.toString());
-  //   log(stackTrace.toString());
-  // }
-  // Inisialisasi Firebase
   await Firebase.initializeApp(
       options: FirebaseOptions(
           apiKey: dotenv.get("VAPID_KEY"),
@@ -351,7 +352,6 @@ Future<void> _initFirebase() async {
 
   FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-  // Minta izin notifikasi
   NotificationSettings settings = await messaging.requestPermission(
     alert: true,
     badge: true,
@@ -360,7 +360,6 @@ Future<void> _initFirebase() async {
 
   debugPrint('User granted permission: ${settings.authorizationStatus}');
 
-  // Setup notifikasi lokal
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
@@ -372,15 +371,13 @@ Future<void> _initFirebase() async {
 
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
-  // Buat channel notifikasi
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'classroom_itats_notification', // ID channel
-    'Classroom Itats Notification', // Nama channel
-    description: 'Classroom Itats Notification', // Deskripsi channel
+    'classroom_itats_notification',
+    'Classroom Itats Notification',
+    description: 'Classroom Itats Notification',
     importance: Importance.high,
   );
 
-  // Daftarkan channel di notifikasi lokal
   final AndroidFlutterLocalNotificationsPlugin?
       androidPlatformChannelSpecifics =
       flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
@@ -388,7 +385,6 @@ Future<void> _initFirebase() async {
 
   await androidPlatformChannelSpecifics?.createNotificationChannel(channel);
 
-  // Setup notifikasi saat aplikasi berada di foreground
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     RemoteNotification? notification = message.notification;
     AndroidNotification? android = message.notification?.android;
@@ -400,7 +396,7 @@ Future<void> _initFirebase() async {
         notification.body,
         const NotificationDetails(
           android: AndroidNotificationDetails(
-            'classroom_itats_notification', // Harus sama dengan channel ID
+            'classroom_itats_notification',
             'Classroom Itats Notification',
             channelDescription: 'Classroom Itats Notification',
             importance: Importance.high,
@@ -411,7 +407,6 @@ Future<void> _initFirebase() async {
     }
   });
 
-  // Background notification handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 }
 
@@ -423,17 +418,11 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> _requestPermision() async {
   final permissionStatus = await Permission.storage.status;
   if (permissionStatus.isDenied) {
-    // Here just ask for the permission for the first time
     await Permission.storage.request();
-
-    // I noticed that sometimes popup won't show after user press deny
-    // so I do the check once again but now go straight to appSettings
     if (permissionStatus.isDenied) {
       await openAppSettings();
     }
   } else if (permissionStatus.isPermanentlyDenied) {
-    // Here open app settings for user to manually enable permission in case
-    // where permission was permanently denied
     await openAppSettings();
   } else {
     // Do stuff that require permission here
