@@ -46,6 +46,8 @@ import 'package:classroom_itats_mobile/user/bloc/academic_period/academic_period
 import 'package:classroom_itats_mobile/user/bloc/subject/subject_bloc.dart';
 import 'package:classroom_itats_mobile/user/repositories/academic_period_repository.dart';
 import 'package:classroom_itats_mobile/user/repositories/subject_repository.dart';
+import 'package:classroom_itats_mobile/user/bloc/presensi/presensi_bloc.dart';
+import 'package:classroom_itats_mobile/user/repositories/presensi_repository.dart';
 import 'package:classroom_itats_mobile/views/lecturer/home/home_page.dart';
 import 'package:classroom_itats_mobile/views/student/student_main_wrapper.dart';
 import 'package:classroom_itats_mobile/views/student/detail_subject/assigment_page.dart';
@@ -88,6 +90,7 @@ void main() async {
   final SubjectMemberRepository subjectMemberRepository =
       SubjectMemberRepository();
   final ProfileRepository profileRepository = ProfileRepository();
+  final PresensiRepository presensiRepository = PresensiRepository();
 
   // ✅ FIX: Wrap SharedPreferences dengan try-catch
   // agar app tidak hang jika plugin registrant gagal
@@ -154,6 +157,11 @@ void main() async {
                 lectureRepository: lectureRepository,
                 presenceRepository: presenceRepository,
               );
+            },
+          ),
+          BlocProvider<PresensiBloc>(
+            create: (context) {
+              return PresensiBloc(presensiRepository: presensiRepository);
             },
           ),
           BlocProvider<PresenceBloc>(

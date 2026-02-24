@@ -136,20 +136,6 @@ class SubjectRepository {
 
     final img = prefs.getStringList("application_images");
 
-    data.add(
-      Container(
-        margin: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-        child: Text(
-          "Anda Memiliki ${subjects.length} Mata Kuliah",
-          softWrap: true,
-          style: const TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-
     for (var subject in subjects) {
       if (role == "Mahasiswa") {
         data.add(

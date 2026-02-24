@@ -23,10 +23,24 @@ class SemesterHelper {
 
       final semester = (diff * 2) + oddEvenValue;
 
-      if (semester <= 0) return "Semester Pra"; // Just in case
-      return "Semester $semester";
+      if (semester <= 0) return "Pra"; // Just in case
+      return "$semester";
     } catch (e) {
-      return "Semester ?";
+      return "?";
+    }
+  }
+
+  static String calculateCalendarYear(int yearStart, String oddEven) {
+    try {
+      final oeAuth = oddEven.toString().toLowerCase().trim();
+      if (oeAuth == "1" || oeAuth == "gasal" || oeAuth == "ganjil") {
+        return yearStart.toString();
+      } else {
+        // Semester Genap terjadi di awal tahun kalender berikutnya
+        return (yearStart + 1).toString();
+      }
+    } catch (e) {
+      return yearStart.toString();
     }
   }
 }
