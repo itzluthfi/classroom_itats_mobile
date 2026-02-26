@@ -9,14 +9,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentAppBar extends StatefulWidget implements PreferredSizeWidget {
   final AcademicPeriodRepository academicPeriodRepository;
+  final bool showBackButton;
+  final VoidCallback? onBackPressed;
 
-  const StudentAppBar({super.key, required this.academicPeriodRepository});
+  const StudentAppBar({
+    super.key,
+    required this.academicPeriodRepository,
+    this.showBackButton = false,
+    this.onBackPressed,
+  });
 
   @override
   State<StudentAppBar> createState() => _StudentAppBarState();
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 20.0);
 }
 
 class _StudentAppBarState extends State<StudentAppBar> {
@@ -53,6 +60,16 @@ class _StudentAppBarState extends State<StudentAppBar> {
             // Kiri: Logo & Text
             Row(
               children: [
+                if (widget.showBackButton)
+                  IconButton(
+                    icon:
+                        const Icon(Icons.arrow_back, color: Color(0xFF14307E)),
+                    onPressed: widget.onBackPressed ??
+                        () => Navigator.maybePop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                if (widget.showBackButton) const SizedBox(width: 8),
                 Image.asset(
                   "assets/application_images/Logo_Classroom_Square-no_bg.png", // Using square logo for the graduation cap
                   height: 32,

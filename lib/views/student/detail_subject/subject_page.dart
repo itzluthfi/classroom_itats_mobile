@@ -1,8 +1,9 @@
-import 'package:classroom_itats_mobile/auth/bloc/auth/auth.dart';
 import 'package:classroom_itats_mobile/auth/repositories/user_repository.dart';
 import 'package:classroom_itats_mobile/models/subject.dart';
 import 'package:classroom_itats_mobile/user/cubit/page_index_cubit.dart';
 import 'package:classroom_itats_mobile/user/repositories/subject_repository.dart';
+import 'package:classroom_itats_mobile/user/repositories/academic_period_repository.dart';
+import 'package:classroom_itats_mobile/views/student/home/partials/app_bar.dart';
 import 'package:classroom_itats_mobile/views/student/detail_subject/partials/bottom_navbar.dart';
 import 'package:classroom_itats_mobile/views/student/detail_subject/partials/subject_body.dart';
 import 'package:flutter/material.dart';
@@ -11,11 +12,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class StudentSubjectPage extends StatefulWidget {
   final SubjectRepository subjectRepository;
   final UserRepository userRepository;
+  final AcademicPeriodRepository academicPeriodRepository;
 
   const StudentSubjectPage(
       {super.key,
       required this.subjectRepository,
-      required this.userRepository});
+      required this.userRepository,
+      required this.academicPeriodRepository});
 
   @override
   State<StudentSubjectPage> createState() => _StudentSubjectPageState();
@@ -58,7 +61,6 @@ class _StudentSubjectPageState extends State<StudentSubjectPage>
 
   @override
   Widget build(BuildContext context) {
-    bool shadowColor = false;
     _subject = ModalRoute.of(context)!.settings.arguments! as Subject;
 
     return BlocConsumer<PageIndexCubit, int>(
@@ -90,33 +92,13 @@ class _StudentSubjectPageState extends State<StudentSubjectPage>
                       ),
                     )
                   : null,
-              appBar: AppBar(
-                leading: BackButton(
-                  onPressed: () {
-                    _clearLoadedWidget();
-
-                    Navigator.maybePop(context);
-                  },
-                ),
-                centerTitle: true,
-                title: Image.asset(
-                  "assets/application_images/Logo_Classroom_Rect-no_bg-rev1.png",
-                  height: 40,
-                  width: 200,
-                  fit: BoxFit.fill,
-                ),
-                scrolledUnderElevation: scrolledUnderElevation,
-                shadowColor: shadowColor == true
-                    ? Theme.of(context).colorScheme.shadow
-                    : null,
-                actions: [
-                  IconButton(
-                    onPressed: () {
-                      BlocProvider.of<AuthBloc>(context).add(LoggedOut());
-                    },
-                    icon: const Icon(Icons.logout),
-                  )
-                ],
+              appBar: StudentAppBar(
+                academicPeriodRepository: widget.academicPeriodRepository,
+                showBackButton: true,
+                onBackPressed: () {
+                  _clearLoadedWidget();
+                  Navigator.maybePop(context);
+                },
               ),
               bottomNavigationBar: const StudentBottomNavbar(),
               body: StudentSubjectBody(

@@ -1,4 +1,6 @@
 import 'package:classroom_itats_mobile/user/repositories/academic_period_repository.dart';
+import 'package:classroom_itats_mobile/user/bloc/academic_period/academic_period_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:classroom_itats_mobile/views/student/home/partials/app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
@@ -62,10 +64,20 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
   late List<Map<String, dynamic>> _filteredData;
   final TextEditingController _searchController = TextEditingController();
 
+  String _selectedStatusFilter = 'Semua';
+
+  // Get status options
+  final List<String> _statusOptions = [
+    'Semua',
+    'Belum',
+    'Selesai',
+    'Terlambat'
+  ];
+
   @override
   void initState() {
     super.initState();
-    _filteredData = List.from(mockData);
+    _filterData();
     _searchController.addListener(_filterData);
   }
 
@@ -75,13 +87,43 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
     super.dispose();
   }
 
+  int _getBadgeCount(String filter) {
+    if (filter == 'Semua') {
+      return mockData.length;
+    } else if (filter == 'Belum') {
+      return mockData.where((item) => item['status'] == STATUS_BELUM).length;
+    } else if (filter == 'Selesai') {
+      return mockData.where((item) => item['status'] == STATUS_SELESAI).length;
+    } else if (filter == 'Terlambat') {
+      return mockData
+          .where((item) => item['status'] == STATUS_TERLAMBAT)
+          .length;
+    }
+    return 0;
+  }
+
   void _filterData() {
     final query = _searchController.text.toLowerCase();
     setState(() {
       _filteredData = mockData.where((item) {
         final matkul = item['mata_kuliah'].toString().toLowerCase();
         final judul = item['judul_tugas'].toString().toLowerCase();
-        return matkul.contains(query) || judul.contains(query);
+        final status = item['status'] as int;
+
+        // Search condition
+        final matchesSearch = matkul.contains(query) || judul.contains(query);
+
+        // Status condition
+        bool matchesStatus = true;
+        if (_selectedStatusFilter == 'Belum') {
+          matchesStatus = status == STATUS_BELUM;
+        } else if (_selectedStatusFilter == 'Selesai') {
+          matchesStatus = status == STATUS_SELESAI;
+        } else if (_selectedStatusFilter == 'Terlambat') {
+          matchesStatus = status == STATUS_TERLAMBAT;
+        }
+
+        return matchesSearch && matchesStatus;
       }).toList();
     });
   }
@@ -108,33 +150,167 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                         fontWeight: FontWeight.bold,
                         fontSize: 20)),
               ),
+            // Header "Tugas Aktif"
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.only(
+                  top: 24.0, bottom: 8.0, left: 16.0, right: 16.0),
+              color: const Color(0xFFF8FAFC),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Text(
+                      "Tugas Aktif (${_getBadgeCount('Semua')})",
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1E293B),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (widget.academicPeriodRepository != null)
+                    BlocBuilder<AcademicPeriodBloc, AcademicPeriodState>(
+                      builder: (context, periodState) {
+                        String periodName = "Memuat periode...";
+                        if (periodState is AcademicPeriodLoaded) {
+                          try {
+                            // Find the currently active academic period description safely
+                            final matched =
+                                periodState.academicPeriod.firstWhere(
+                              (p) =>
+                                  p.academicPeriodId ==
+                                  periodState.currentAcademicPeriod,
+                            );
+                            periodName = matched.academicPeriodDecription;
+                          } catch (e) {
+                            periodName = periodState.currentAcademicPeriod;
+                          }
+                        }
+                        return Text(
+                          periodName,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.blueGrey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
             // Bagian Search Bar Custom
             Container(
               color: const Color(0xFFF8FAFC),
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: "Cari tugas...",
-                  hintStyle: TextStyle(color: Colors.grey.shade500),
-                  prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.blue.withOpacity(0.5)),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: "Cari tugas atau matakuliah...",
+                    hintStyle:
+                        TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                    prefixIcon:
+                        const Icon(Icons.search, color: Color(0xFF14307E)),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                        vertical: 14, horizontal: 20),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: const BorderSide(
+                          color: Color(0xFF14307E), width: 1.5),
+                    ),
                   ),
                 ),
+              ),
+            ),
+
+            // Filter Status & Matkul Rows
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: _statusOptions.map((String filter) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ChoiceChip(
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(filter),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _selectedStatusFilter == filter
+                                  ? Colors.white.withOpacity(0.2)
+                                  : Colors.blueGrey.shade50,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              _getBadgeCount(filter).toString(),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: _selectedStatusFilter == filter
+                                    ? Colors.white
+                                    : Colors.blueGrey.shade700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      selected: _selectedStatusFilter == filter,
+                      selectedColor: const Color(0xFF1E3A8A),
+                      checkmarkColor: Colors.transparent,
+                      showCheckmark: false,
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                      labelStyle: TextStyle(
+                        color: _selectedStatusFilter == filter
+                            ? Colors.white
+                            : Colors.blueGrey.shade700,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      backgroundColor: Colors.white,
+                      side: BorderSide(
+                        color: _selectedStatusFilter == filter
+                            ? Colors.transparent
+                            : Colors.grey.shade300,
+                      ),
+                      onSelected: (bool selected) {
+                        setState(() {
+                          _selectedStatusFilter = selected ? filter : 'Semua';
+                          _filterData();
+                        });
+                      },
+                    ),
+                  );
+                }).toList(),
               ),
             ),
 

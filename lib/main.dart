@@ -303,8 +303,11 @@ class MyApp extends StatelessWidget {
         "/student/subject": (context) => StudentSubjectPage(
               subjectRepository: subjectRepository,
               userRepository: userRepository,
+              academicPeriodRepository: academicPeriodRepository,
             ),
-        "/student/assignments": (context) => const StudentAssignmentPage(),
+        "/student/assignments": (context) => StudentAssignmentPage(
+              academicPeriodRepository: academicPeriodRepository,
+            ),
         "/student/profile": (context) =>
             ProfilePage(academicPeriodRepository: academicPeriodRepository),
         "/forum/create": (context) => const CreateForumPage(),

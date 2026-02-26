@@ -113,7 +113,7 @@ class PresensiCard extends StatelessWidget {
             _buildDetailRow(Icons.access_time_outlined,
                 "$dateStr,  ${kul.timeStart} - ${kul.timeEnd}"),
             const Gap(8),
-            _buildDetailRow(Icons.location_on,
+            _buildDetailRow(Icons.class_outlined,
                 "${kul.collegeTypeName} (${kul.lectureTypeName})"),
             const Gap(8),
             _buildDetailRow(

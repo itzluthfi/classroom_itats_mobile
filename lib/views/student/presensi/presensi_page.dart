@@ -88,9 +88,6 @@ class _StudentPresensiPageState extends State<StudentPresensiPage> {
                       case 'Sudah':
                         displayList = state.sudahAbsen;
                         break;
-                      case 'Habis Waktu':
-                        displayList = state.habisWaktu;
-                        break;
                       case 'Semua':
                       default:
                         displayList = state.allPresences;
@@ -105,19 +102,21 @@ class _StudentPresensiPageState extends State<StudentPresensiPage> {
                           padding: const EdgeInsets.only(
                               top: 24.0, bottom: 8.0, left: 16.0, right: 16.0),
                           color: const Color(0xFFF8FAFC),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text(
-                                "Daftar Presensi Aktif (${displayList.length})",
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w900,
-                                  color: Color(0xFF1E293B),
-                                  letterSpacing: -0.5,
+                              Expanded(
+                                child: Text(
+                                  "Presensi Aktif (${displayList.length})",
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                    color: Color(0xFF1E293B),
+                                    letterSpacing: -0.5,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(width: 8),
                               BlocBuilder<AcademicPeriodBloc,
                                   AcademicPeriodState>(
                                 builder: (context, periodState) {
@@ -154,7 +153,7 @@ class _StudentPresensiPageState extends State<StudentPresensiPage> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16.0, vertical: 8.0),
                           child: Row(
-                            children: ['Semua', 'Belum', 'Sudah', 'Habis Waktu']
+                            children: ['Semua', 'Belum', 'Sudah']
                                 .map((String filter) {
                               return Padding(
                                 padding: const EdgeInsets.only(right: 8.0),

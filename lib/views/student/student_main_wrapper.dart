@@ -73,6 +73,7 @@ class _StudentMainWrapperState extends State<StudentMainWrapper> {
             backgroundColor: Theme.of(context).colorScheme.surface,
             selectedItemColor: primaryColor,
             unselectedItemColor: unselectedColor,
+            showUnselectedLabels: true,
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
             unselectedLabelStyle:
                 const TextStyle(fontWeight: FontWeight.normal),
@@ -120,8 +121,33 @@ class _StudentMainWrapperState extends State<StudentMainWrapper> {
                 label: 'Presensi',
               ),
               BottomNavigationBarItem(
-                icon: _buildIcon('assets/application_images/tugas.png',
-                    _selectedIndex == 2, primaryColor, unselectedColor),
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    _buildIcon('assets/application_images/tugas.png',
+                        _selectedIndex == 2, primaryColor, unselectedColor),
+                    // Hardcoded badge (2) since Tugas uses mockData for now
+                    Positioned(
+                      right: -5,
+                      top: -5,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Text(
+                          '2', // Corresponding to 2 STATUS_BELUM mock tasks
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 label: 'Tugas',
               ),
             ],

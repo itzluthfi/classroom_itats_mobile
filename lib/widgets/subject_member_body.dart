@@ -30,11 +30,15 @@ class _SubjectMemberBodyState extends State<SubjectMemberBody> {
   }
 
   Future<void> _launchInBrowser(Uri url) async {
-    if (!await launchUrl(
-      url,
-      mode: LaunchMode.externalApplication,
-    )) {
-      throw Exception('Could not launch $url');
+    try {
+      if (!await launchUrl(
+        url,
+        mode: LaunchMode.externalApplication,
+      )) {
+        debugPrint('Could not launch $url');
+      }
+    } catch (e) {
+      debugPrint('Error launching url: $e');
     }
   }
 
@@ -166,17 +170,15 @@ class _SubjectMemberBodyState extends State<SubjectMemberBody> {
                                           Gap(screenWidth * 0.04),
                                           IconButton(
                                             onPressed: () {
-                                              setState(() {
-                                                _launchInBrowser(
-                                                  Uri(
-                                                    scheme: "https",
-                                                    host: "wa.me",
-                                                    path: state
-                                                        .subjectMembers[index]
-                                                        .phoneNumber,
-                                                  ),
-                                                );
-                                              });
+                                              var phone = state
+                                                  .subjectMembers[index]
+                                                  .phoneNumber
+                                                  .replaceAll(
+                                                      RegExp(r'[^0-9]'), '');
+                                              _launchInBrowser(
+                                                Uri.parse(
+                                                    "https://wa.me/$phone"),
+                                              );
                                             },
                                             icon: const Icon(
                                               Icons.phone_in_talk,
@@ -297,14 +299,14 @@ class _SubjectMemberBodyState extends State<SubjectMemberBody> {
                                             Gap(screenWidth * 0.04),
                                             IconButton(
                                               onPressed: () {
+                                                var phone = state
+                                                    .subjectMembers[index]
+                                                    .phoneNumber
+                                                    .replaceAll(
+                                                        RegExp(r'[^0-9]'), '');
                                                 _launchInBrowser(
-                                                  Uri(
-                                                    scheme: "https",
-                                                    host: "wa.me",
-                                                    path: state
-                                                        .subjectMembers[index]
-                                                        .phoneNumber,
-                                                  ),
+                                                  Uri.parse(
+                                                      "https://wa.me/$phone"),
                                                 );
                                               },
                                               icon: const Icon(
@@ -399,14 +401,14 @@ class _SubjectMemberBodyState extends State<SubjectMemberBody> {
                                             Gap(screenWidth * 0.04),
                                             IconButton(
                                               onPressed: () {
+                                                var phone = state
+                                                    .subjectMembers[index]
+                                                    .phoneNumber
+                                                    .replaceAll(
+                                                        RegExp(r'[^0-9]'), '');
                                                 _launchInBrowser(
-                                                  Uri(
-                                                    scheme: "https",
-                                                    host: "wa.me",
-                                                    path: state
-                                                        .subjectMembers[index]
-                                                        .phoneNumber,
-                                                  ),
+                                                  Uri.parse(
+                                                      "https://wa.me/$phone"),
                                                 );
                                               },
                                               icon: const Icon(
@@ -529,14 +531,14 @@ class _SubjectMemberBodyState extends State<SubjectMemberBody> {
                                             Gap(screenWidth * 0.04),
                                             IconButton(
                                               onPressed: () {
+                                                var phone = state
+                                                    .subjectMembers[index]
+                                                    .phoneNumber
+                                                    .replaceAll(
+                                                        RegExp(r'[^0-9]'), '');
                                                 _launchInBrowser(
-                                                  Uri(
-                                                    scheme: "https",
-                                                    host: "wa.me",
-                                                    path: state
-                                                        .subjectMembers[index]
-                                                        .phoneNumber,
-                                                  ),
+                                                  Uri.parse(
+                                                      "https://wa.me/$phone"),
                                                 );
                                               },
                                               icon: const Icon(
@@ -626,13 +628,12 @@ class _SubjectMemberBodyState extends State<SubjectMemberBody> {
                                       Gap(screenWidth * 0.04),
                                       IconButton(
                                         onPressed: () {
+                                          var phone = state
+                                              .subjectMembers[index].phoneNumber
+                                              .replaceAll(
+                                                  RegExp(r'[^0-9]'), '');
                                           _launchInBrowser(
-                                            Uri(
-                                              scheme: "https",
-                                              host: "wa.me",
-                                              path: state.subjectMembers[index]
-                                                  .phoneNumber,
-                                            ),
+                                            Uri.parse("https://wa.me/$phone"),
                                           );
                                         },
                                         icon: const Icon(
