@@ -1,6 +1,5 @@
 import 'package:classroom_itats_mobile/models/subject.dart';
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 
 class StudentSubjectCard extends StatefulWidget {
@@ -56,65 +55,72 @@ class _StudentSubjectCardState extends State<StudentSubjectCard> {
                   Radius.circular(10),
                 ),
               ),
-              child: Column(
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
+                  // Color Overlay to emulate the mockups (greenish/dark tint)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F3D3E).withOpacity(
+                          0.4), // Dark greenish-blue overlay with reduced opacity
+                    ),
+                  ),
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Gap(10),
-                        Row(
-                          children: [
-                            Text(
-                              widget.subject.lecturerName.toUpperCase(),
-                              textAlign: TextAlign.start,
-                              softWrap: true,
-                              maxLines: 1,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
-                                fontWeight: FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ),
                         Text(
-                          widget.subject.subjectName,
-                          textAlign: TextAlign.start,
-                          softWrap: true,
+                          widget.subject.lecturerName.toUpperCase(),
                           maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            overflow: TextOverflow.ellipsis,
+                            fontSize: 12,
                             color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                        Gap(widget.subject.subjectSchedule.length > 1
-                            ? 30
-                            : 50),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.subject.subjectName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                            height: 1.1,
+                          ),
+                        ),
+                        const Spacer(),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: _subjectRoomRows(
-                                  widget.subject.subjectSchedule),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: _subjectRoomRows(
+                                    widget.subject.subjectSchedule),
+                              ),
                             ),
-                            Column(
-                              children: [
-                                Text(
-                                  widget.subject.subjectClass,
-                                  style: const TextStyle(
-                                    height: 1.8,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                  ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.25),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                widget.subject.subjectClass,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
                                 ),
-                              ],
+                              ),
                             ),
                           ],
                         ),

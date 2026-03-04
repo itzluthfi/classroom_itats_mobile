@@ -1,4 +1,3 @@
-import 'package:accordion/accordion.dart';
 import 'package:classroom_itats_mobile/auth/repositories/user_repository.dart';
 import 'package:classroom_itats_mobile/models/assignment.dart';
 import 'package:classroom_itats_mobile/models/lecture.dart';
@@ -8,7 +7,6 @@ import 'package:classroom_itats_mobile/user/bloc/lecture/lecture_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/study_achievement/study_achievement_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/study_material/study_material_bloc.dart';
 import 'package:flutter/material.dart';
-import 'package:accordion/controllers.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -25,11 +23,6 @@ class StudentMaterialsBody extends StatefulWidget {
 }
 
 class _StudentMaterialsBodyState extends State<StudentMaterialsBody> {
-  static const headerStyle =
-      TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold);
-  static const contentStyle = TextStyle(
-      color: Colors.black, fontSize: 14, fontWeight: FontWeight.normal);
-
   @override
   void initState() {
     super.initState();
@@ -60,80 +53,58 @@ class _StudentMaterialsBodyState extends State<StudentMaterialsBody> {
     return BlocConsumer<StudyAchievementBloc, StudyAchievementState>(
       listener: (context, state) {},
       builder: (context, state) {
-        return Placeholder(
-          color: const Color.fromRGBO(0, 0, 0, 0),
-          child: RefreshIndicator(
-              child: Accordion(
-                headerBorderColor: Colors.grey,
-                headerBorderWidth: 1,
-                headerBorderColorOpened: Colors.grey,
-                headerBackgroundColorOpened: Colors.white,
-                contentBackgroundColor: Colors.white,
-                contentBorderColor: Colors.grey,
-                contentBorderWidth: 1,
-                contentHorizontalPadding: 20,
-                scaleWhenAnimating: true,
-                openAndCloseAnimation: true,
-                headerPadding:
-                    const EdgeInsets.symmetric(vertical: 20, horizontal: 15),
-                sectionOpeningHapticFeedback: SectionHapticFeedback.heavy,
-                sectionClosingHapticFeedback: SectionHapticFeedback.light,
-                headerBackgroundColor: Colors.white,
-                children: state is StudyAchievementLoaded
-                    ? _accordionList(
-                        widget.userRepository,
-                        headerStyle,
-                        state.lectureWeeks,
-                        state.studyAchievements,
-                        state.assignments,
-                        widget.subject,
-                        contentStyle,
-                        screenWidth,
-                        context,
-                      )
-                    : _accordionList(
-                        widget.userRepository,
-                        headerStyle,
-                        List<Lecture>.empty(),
-                        List<StudyAchievement>.empty(),
-                        List<Assignment>.empty(),
-                        widget.subject,
-                        contentStyle,
-                        screenWidth,
-                        context,
-                      ),
-              ),
-              onRefresh: () async {
-                await Future<void>.delayed(const Duration(milliseconds: 1000));
-                setState(() {
-                  BlocProvider.of<StudyAchievementBloc>(context)
-                      .add(GetStudyAchievement(
-                    academicPeriod: widget.subject.academicPeriodId,
-                    subjectId: widget.subject.subjectId,
-                    subjectClass: widget.subject.subjectClass,
-                    masterActivityId: widget.subject.activityMasterId,
-                  ));
-                });
-              }),
-        );
+        return RefreshIndicator(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: state is StudyAchievementLoaded
+                  ? _buildWeeklyCards(
+                      widget.userRepository,
+                      state.lectureWeeks,
+                      state.studyAchievements,
+                      state.assignments,
+                      widget.subject,
+                      screenWidth,
+                      context,
+                    )
+                  : _buildWeeklyCards(
+                      widget.userRepository,
+                      List<Lecture>.empty(),
+                      List<StudyAchievement>.empty(),
+                      List<Assignment>.empty(),
+                      widget.subject,
+                      screenWidth,
+                      context,
+                    ),
+            ),
+            onRefresh: () async {
+              await Future<void>.delayed(const Duration(milliseconds: 1000));
+              setState(() {
+                BlocProvider.of<StudyAchievementBloc>(context)
+                    .add(GetStudyAchievement(
+                  academicPeriod: widget.subject.academicPeriodId,
+                  subjectId: widget.subject.subjectId,
+                  subjectClass: widget.subject.subjectClass,
+                  masterActivityId: widget.subject.activityMasterId,
+                ));
+              });
+            });
       },
     );
   }
 }
 
-List<AccordionSection> _accordionList(
+List<Widget> _buildWeeklyCards(
     UserRepository userRepository,
-    TextStyle headerStyle,
     List<Lecture> lectureWeeks,
     List<StudyAchievement> studyAchievements,
     List<Assignment> assignments,
     Subject subject,
-    TextStyle contentStyle,
     double screenWidth,
     context) {
-  List<AccordionSection> accordions = List.empty(growable: true);
+  List<Widget> cards = List.empty(growable: true);
 
-  List<Map<String, dynamic>> accordionDataMappings = List.empty(growable: true);
+  List<Map<String, dynamic>> cardDataMappings = List.empty(growable: true);
 
   for (var i = 0; i < 16; i++) {
     var data = <String, dynamic>{};
@@ -142,410 +113,362 @@ List<AccordionSection> _accordionList(
     data["studyAchievement"] = null;
     data["assignment"] = null;
 
-    accordionDataMappings.add(data);
+    cardDataMappings.add(data);
     if (lectureWeeks.isNotEmpty) {
       for (var lectureWeek in lectureWeeks) {
         if (lectureWeek.weekID == (i + 1)) {
-          accordionDataMappings[i]["lectureWeek"] = lectureWeek;
+          cardDataMappings[i]["lectureWeek"] = lectureWeek;
         }
       }
     }
     if (studyAchievements.isNotEmpty) {
       for (var studyAchievement in studyAchievements) {
         if (studyAchievement.weekId == (i + 1)) {
-          accordionDataMappings[i]["studyAchievement"] = studyAchievement;
+          cardDataMappings[i]["studyAchievement"] = studyAchievement;
         }
       }
     }
     if (assignments.isNotEmpty) {
       for (var assignment in assignments) {
         if (assignment.weekId == (i + 1)) {
-          accordionDataMappings[i]["assignment"] = assignment;
+          cardDataMappings[i]["assignment"] = assignment;
         }
       }
     }
   }
 
-  for (var accordionDataMapping in accordionDataMappings) {
-    accordions.add(_accordionSection(
-        context,
-        screenWidth,
-        accordionDataMappings.indexOf(accordionDataMapping),
-        headerStyle,
-        contentStyle,
-        userRepository,
-        subject,
-        accordionDataMapping["studyAchievement"],
-        accordionDataMapping["assignment"],
-        accordionDataMapping["lectureWeek"]));
+  for (var mapping in cardDataMappings) {
+    cards.add(_buildWeeklyCard(
+      context,
+      screenWidth,
+      cardDataMappings.indexOf(mapping),
+      userRepository,
+      subject,
+      mapping["studyAchievement"],
+      mapping["assignment"],
+      mapping["lectureWeek"],
+    ));
   }
 
-  return accordions;
+  return cards;
 }
 
-AccordionSection _accordionSection(
+Widget _buildWeeklyCard(
     context,
     double screenWidth,
     int index,
-    TextStyle headerStyle,
-    TextStyle contentStyle,
     UserRepository userRepository,
     Subject subject,
     StudyAchievement? studyAchievement,
     Assignment? assignment,
     Lecture? lecture) {
-  return AccordionSection(
-    isOpen: false,
-    contentVerticalPadding: 20,
-    leftIcon: const Icon(Icons.assignment, color: Colors.black),
-    rightIcon:
-        const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.black),
-    header: Text("Minggu ke - ${index + 1}", style: headerStyle),
-    content: Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  String weekStr = (index + 1).toString().padLeft(2, '0');
+
+  return Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.grey.shade100, width: 1),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.04),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        )
+      ],
+    ),
+    child: Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        iconColor: const Color(0xFF8692A6),
+        collapsedIconColor: const Color(0xFF8692A6),
+        title: Row(
           children: [
-            Column(
-              children: [
-                SizedBox(
-                  width: screenWidth * 0.95,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Capaian Pembelajaran :",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      lecture != null
-                          ? Column(
-                              children: [
-                                const Gap(8),
-                                Badge(
-                                  label: Text(lecture.collegeType == 1
-                                      ? 'offline'
-                                      : 'hybrid'),
-                                  backgroundColor: Colors.blueAccent,
-                                )
-                              ],
-                            )
-                          : const Column(),
-                    ],
+            Container(
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE8F0FE),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  weekStr,
+                  style: const TextStyle(
+                    color: Color(0xFF1E5AD6),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
                   ),
                 ),
-                const Gap(5),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: screenWidth * 0.95,
-                      child: Text(
-                        studyAchievement != null
-                            ? studyAchievement.studyAchievementDescription
-                            : 'Belum ada informasi',
-                        maxLines: 3,
-                        textAlign: TextAlign.justify,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ],
-        ),
-        const Gap(10),
-        const Row(
-          children: [
+            const Gap(16),
             Text(
-              "Rencana Pembelajaran :",
-              style: TextStyle(
+              "Minggu ke - ${index + 1}",
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Color(0xFF222B45),
               ),
             ),
           ],
         ),
-        const Gap(5),
-        Row(
-          children: [
-            Text(
+        childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        children: [
+          // Capaian Pembelajaran
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              "CAPAIAN PEMBELAJARAN",
+              style: TextStyle(
+                color: Color(0xFF8692A6),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          const Gap(8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              studyAchievement != null
+                  ? studyAchievement.studyAchievementDescription
+                  : 'Belum ada informasi',
+              style: const TextStyle(
+                color: Color(0xFF4A5568),
+                fontSize: 13,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.justify,
+            ),
+          ),
+          const Gap(16),
+
+          // Rencana Pembelajaran
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              "RENCANA PEMBELAJARAN",
+              style: TextStyle(
+                color: Color(0xFF8692A6),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          const Gap(8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
               studyAchievement != null
                   ? studyAchievement.studyPlanDescription
                   : 'Belum ada informasi',
-              maxLines: 3,
+              style: const TextStyle(
+                color: Color(0xFF4A5568),
+                fontSize: 13,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.justify,
             ),
-          ],
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            lecture != null
-                ? lecture.linkMeet != ''
-                    ? Column(
-                        children: [
-                          const Gap(10),
-                          const Row(
-                            children: [
-                              Text(
-                                "Link Meet :",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+          ),
+          const Gap(24),
+
+          // Action Buttons
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                // Materi Button
+                ElevatedButton.icon(
+                  onPressed: () {
+                    showModalBottomSheet<void>(
+                      useSafeArea: true,
+                      showDragHandle: true,
+                      isScrollControlled: true,
+                      context: context,
+                      builder: (BuildContext context) {
+                        BlocProvider.of<StudyMaterialBloc>(context).add(
+                          GetStudyMaterial(
+                            academicPeriod: subject.academicPeriodId,
+                            subjectId: subject.subjectId,
+                            subjectClass: subject.subjectClass,
+                            weekId: index + 1,
                           ),
-                          Row(
-                            children: [
-                              IconButton(
-                                onPressed: () {
-                                  _launchInBrowser(
-                                      Uri.parse(lecture.linkMeet!));
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  surfaceTintColor: Colors.white,
-                                  backgroundColor: Colors.indigo,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  fixedSize: const Size(90, 10),
-                                ),
-                                icon: const Icon(
-                                  Icons.video_camera_front_rounded,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      )
-                    : const Gap(5)
-                : const Gap(5),
-            lecture != null
-                ? lecture.linkRecord != ''
-                    ? Column(
-                        children: [
-                          const Gap(15),
-                          const Row(
-                            children: [
-                              Text(
-                                "Link Record :",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              ElevatedButton(
-                                onPressed: () {
-                                  _launchInBrowser(
-                                      Uri.parse(lecture.linkRecord!));
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  surfaceTintColor: Colors.white,
-                                  backgroundColor: Colors.red,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  fixedSize: const Size(90, 10),
-                                ),
-                                child: const Icon(
-                                  Icons.play_arrow,
-                                  color: Colors.white,
-                                ),
-                              )
-                            ],
-                          ),
-                        ],
-                      )
-                    : const Gap(5)
-                : const Gap(5),
-          ],
-        ),
-        const Gap(15),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            lecture != null
-                ? Column(
-                    children: [
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          surfaceTintColor: Colors.white,
-                          backgroundColor: const Color(0xFF0072BB),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () {
-                          showModalBottomSheet<void>(
-                            useSafeArea: true,
-                            showDragHandle: true,
-                            isScrollControlled: true,
-                            context: context,
-                            builder: (BuildContext context) {
-                              BlocProvider.of<StudyMaterialBloc>(context).add(
-                                GetStudyMaterial(
-                                  academicPeriod: subject.academicPeriodId,
-                                  subjectId: subject.subjectId,
-                                  subjectClass: subject.subjectClass,
-                                  weekId: lecture.weekID!,
-                                ),
-                              );
-                              return BlocConsumer<StudyMaterialBloc,
-                                  StudyMaterialState>(
-                                listener: (context, state) {},
-                                builder: (context, state) {
-                                  return SizedBox(
-                                    height: 200,
-                                    width: double.maxFinite,
-                                    child:
-                                        state is StudyMaterialLoaded &&
-                                                state.studyMaterials.isNotEmpty
-                                            ? ListView.separated(
-                                                padding:
-                                                    const EdgeInsets.all(20),
-                                                scrollDirection: Axis.vertical,
-                                                itemCount:
-                                                    state.studyMaterials.length,
-                                                itemBuilder: (context, index) {
-                                                  return SizedBox(
-                                                    width: screenWidth,
-                                                    child: Column(
-                                                      children: [
-                                                        Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
-                                                          children: [
-                                                            Column(
-                                                              children: [
-                                                                Row(
-                                                                  children: [
-                                                                    const Icon(Icons
-                                                                        .file_present_rounded),
-                                                                    const Gap(
-                                                                        10),
-                                                                    SizedBox(
-                                                                      width:
-                                                                          screenWidth *
-                                                                              0.8,
-                                                                      child:
-                                                                          Text(
-                                                                        state
-                                                                            .studyMaterials[index]
-                                                                            .materialTitle,
-                                                                        overflow:
-                                                                            TextOverflow.ellipsis,
-                                                                      ),
-                                                                    )
-                                                                  ],
-                                                                )
-                                                              ],
-                                                            ),
-                                                            Column(
-                                                              children: [
-                                                                IconButton(
-                                                                  onPressed:
-                                                                      () {
-                                                                    BlocProvider.of<LectureBloc>(
-                                                                            context)
-                                                                        .add(
-                                                                      DownloadMaterial(
-                                                                          fileLink: state
-                                                                              .studyMaterials[index]
-                                                                              .materialLink),
-                                                                    );
-                                                                  },
-                                                                  icon: const Icon(
-                                                                      Icons
-                                                                          .file_download_outlined),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ],
-                                                        )
-                                                      ],
+                        );
+                        return BlocConsumer<StudyMaterialBloc,
+                            StudyMaterialState>(
+                          listener: (context, state) {},
+                          builder: (context, state) {
+                            return SizedBox(
+                              height: 200,
+                              width: double.maxFinite,
+                              child: state is StudyMaterialLoaded &&
+                                      state.studyMaterials.isNotEmpty
+                                  ? ListView.separated(
+                                      padding: const EdgeInsets.all(20),
+                                      itemCount: state.studyMaterials.length,
+                                      itemBuilder: (context, matIndex) {
+                                        return SizedBox(
+                                          width: screenWidth,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(
+                                                        Icons
+                                                            .file_present_rounded,
+                                                        color:
+                                                            Color(0xFF0072BB)),
+                                                    const Gap(10),
+                                                    Expanded(
+                                                      child: Text(
+                                                        state
+                                                            .studyMaterials[
+                                                                matIndex]
+                                                            .materialTitle,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
                                                     ),
+                                                  ],
+                                                ),
+                                              ),
+                                              IconButton(
+                                                onPressed: () {
+                                                  BlocProvider.of<LectureBloc>(
+                                                          context)
+                                                      .add(
+                                                    DownloadMaterial(
+                                                        fileLink: state
+                                                            .studyMaterials[
+                                                                matIndex]
+                                                            .materialLink),
                                                   );
                                                 },
-                                                separatorBuilder:
-                                                    (BuildContext context,
-                                                            int index) =>
-                                                        const Divider(),
-                                              )
-                                            : const Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Column(
-                                                    children: [
-                                                      Text(
-                                                          "Tidak ada materi yang dapat ditampilkan"),
-                                                    ],
-                                                  )
-                                                ],
+                                                icon: const Icon(
+                                                    Icons
+                                                        .file_download_outlined,
+                                                    color: Color(0xFF0072BB)),
                                               ),
-                                  );
-                                },
-                              );
-                            },
-                          );
-                        },
-                        child: const Text("Materi"),
-                      )
-                    ],
-                  )
-                : const Column(),
-            assignment != null
-                ? Column(
-                    children: [
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          surfaceTintColor: Colors.white,
-                          backgroundColor: Colors.deepOrange,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () async {
-                          await userRepository.setWidgetState(
-                              "student_material", false);
-                          await userRepository.setWidgetState("forum", false);
-                          await userRepository.setWidgetState(
-                              "student_presence", false);
-                          await userRepository.setWidgetState(
-                              "student_score_recap", false);
-                          await userRepository.setWidgetState(
-                              "subject_member", false);
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                      separatorBuilder: (context, i) =>
+                                          const Divider(),
+                                    )
+                                  : const Center(
+                                      child: Text(
+                                          "Tidak ada materi yang dapat ditampilkan")),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                  icon: const Icon(Icons.description, size: 18),
+                  label: const Text("Materi"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E5AD6),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
 
-                          List<Object?> object = List.empty(growable: true);
+                // Tugas Button (only show if assignment exists)
+                if (assignment != null)
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      await userRepository.setWidgetState(
+                          "student_material", false);
+                      await userRepository.setWidgetState("forum", false);
+                      await userRepository.setWidgetState(
+                          "student_presence", false);
+                      await userRepository.setWidgetState(
+                          "student_score_recap", false);
+                      await userRepository.setWidgetState(
+                          "subject_member", false);
 
-                          object.add(subject);
-                          object.add(assignment);
+                      List<Object?> object = List.empty(growable: true);
+                      object.add(subject);
+                      object.add(assignment);
 
-                          Navigator.of(context).pushReplacementNamed(
-                              "/student/assignments",
-                              arguments: List<Object>.from(object));
-                        },
-                        child: const Text("Tugas"),
-                      ),
-                    ],
-                  )
-                : const Column(),
-          ],
-        ),
-        const Gap(10),
-      ],
+                      Navigator.of(context).pushReplacementNamed(
+                          "/student/assignments",
+                          arguments: List<Object>.from(object));
+                    },
+                    icon: const Icon(Icons.assignment_outlined, size: 18),
+                    label: const Text("Tugas"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF7A00),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+
+                // Hybrid Button (only show if it's NOT offline)
+                if (lecture != null && lecture.collegeType != 1)
+                  ElevatedButton.icon(
+                    onPressed: lecture.linkMeet != null &&
+                            lecture.linkMeet!.isNotEmpty
+                        ? () => _launchInBrowser(Uri.parse(lecture.linkMeet!))
+                        : null,
+                    icon: const Icon(Icons.videocam, size: 18),
+                    label: const Text("Hybrid"),
+                    style: ElevatedButton.styleFrom(
+                      elevation: 0,
+                      backgroundColor: const Color(0xFF9032EB),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+
+                // Rekaman Button (only show if it's NOT offline and link exists)
+                if (lecture != null &&
+                    lecture.collegeType != 1 &&
+                    lecture.linkRecord != null &&
+                    lecture.linkRecord!.isNotEmpty)
+                  ElevatedButton.icon(
+                    onPressed: () =>
+                        _launchInBrowser(Uri.parse(lecture.linkRecord!)),
+                    icon: const Icon(Icons.play_circle_fill, size: 18),
+                    label: const Text("Rekaman"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade600,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+              ],
+            ),
+          )
+        ],
+      ),
     ),
-    onOpenSection: () {},
   );
 }
 

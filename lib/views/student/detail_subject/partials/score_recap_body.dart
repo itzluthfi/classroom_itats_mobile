@@ -99,6 +99,39 @@ class _StudentScoreRecapBodyState extends State<StudentScoreRecapBody> {
 
 List<Widget> _getStudentAssignmentScore(state, double screenWidth) {
   if (state is AssignmentLoaded) {
+    if (state.studentAssigmentScores.isEmpty) {
+      return [
+        SizedBox(
+          width: screenWidth,
+          height: 300,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.assignment_outlined,
+                  size: 80, color: Colors.grey.shade400),
+              const Gap(16),
+              Text(
+                "Belum Ada Nilai",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const Gap(8),
+              Text(
+                "Nilai tugas atau kuis belum tersedia.",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+            ],
+          ),
+        )
+      ];
+    }
+
     return [
       Column(
         children:
@@ -107,7 +140,21 @@ List<Widget> _getStudentAssignmentScore(state, double screenWidth) {
     ];
   } else {
     return [
-      const Text("Mohon maaf, tidak ada data yang dapat ditampilkan"),
+      SizedBox(
+        width: screenWidth,
+        height: 300,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 60, color: Colors.grey.shade400),
+            const Gap(16),
+            Text(
+              "Mohon maaf, tidak ada data yang dapat ditampilkan",
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      )
     ];
   }
 }

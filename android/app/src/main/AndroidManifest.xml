@@ -40,6 +40,14 @@
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="classroom_itats_notification"/>
     </application>
     <queries>
+        <!-- For URL launcher WhatsApp deep linking -->
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="whatsapp" />
+        </intent>
+
         <!-- If your app opens https URLs -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
