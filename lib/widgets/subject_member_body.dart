@@ -74,7 +74,7 @@ class _SubjectMemberBodyState extends State<SubjectMemberBody> {
     }
   }
 
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
 
   @override
@@ -153,7 +153,7 @@ class _SubjectMemberBodyState extends State<SubjectMemberBody> {
                       const Gap(12),
                       ...dosenList
                           .map((dosen) => _buildDosenCard(dosen))
-                          .toList(),
+                          ,
                       const Gap(24),
                     ],
 
@@ -234,7 +234,7 @@ class _SubjectMemberBodyState extends State<SubjectMemberBody> {
                               padding: const EdgeInsets.only(bottom: 12),
                               child: _buildStudentCard(student),
                             ))
-                        .toList(),
+                        ,
 
                     if (filteredStudents.isEmpty)
                       const Center(

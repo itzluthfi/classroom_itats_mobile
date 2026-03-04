@@ -5,14 +5,7 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:classroom_itats_mobile/auth/repositories/user_repository.dart';
-import 'package:classroom_itats_mobile/user/repositories/academic_period_repository.dart';
-import 'package:classroom_itats_mobile/user/repositories/major_repository.dart';
-import 'package:classroom_itats_mobile/user/repositories/subject_repository.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 
-import 'package:classroom_itats_mobile/main.dart';
 
 void main() {
   // testWidgets('Counter increments smoke test', (WidgetTester tester) async {

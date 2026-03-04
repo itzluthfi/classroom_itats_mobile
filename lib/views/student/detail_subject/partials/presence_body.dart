@@ -324,8 +324,8 @@ List<Widget> _addNewButton(
           width: 40,
           child: TextButton(
             style: const ButtonStyle(
-              shape: MaterialStatePropertyAll(CircleBorder()),
-              backgroundColor: MaterialStatePropertyAll(
+              shape: WidgetStatePropertyAll(CircleBorder()),
+              backgroundColor: WidgetStatePropertyAll(
                 Colors.green,
               ),
             ),
@@ -348,8 +348,8 @@ List<Widget> _addNewButton(
           width: 40,
           child: TextButton(
             style: const ButtonStyle(
-              shape: MaterialStatePropertyAll(CircleBorder()),
-              backgroundColor: MaterialStatePropertyAll(
+              shape: WidgetStatePropertyAll(CircleBorder()),
+              backgroundColor: WidgetStatePropertyAll(
                 Colors.green,
               ),
             ),
@@ -458,8 +458,8 @@ List<Widget> _addNewButton(
             width: 40,
             child: TextButton(
               style: const ButtonStyle(
-                shape: MaterialStatePropertyAll(CircleBorder()),
-                backgroundColor: MaterialStatePropertyAll(
+                shape: WidgetStatePropertyAll(CircleBorder()),
+                backgroundColor: WidgetStatePropertyAll(
                   Color(0xFFDC3545),
                 ),
               ),
@@ -482,8 +482,8 @@ List<Widget> _addNewButton(
             width: 40,
             child: TextButton(
               style: const ButtonStyle(
-                shape: MaterialStatePropertyAll(CircleBorder()),
-                backgroundColor: MaterialStatePropertyAll(
+                shape: WidgetStatePropertyAll(CircleBorder()),
+                backgroundColor: WidgetStatePropertyAll(
                   Color(0xFFDC3545),
                 ),
               ),

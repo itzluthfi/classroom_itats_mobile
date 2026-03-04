@@ -274,14 +274,20 @@ class _ForumBodyState extends State<ForumBody> {
               width: screenWidth,
               child: Row(
                 children: [
-                  Card(
-                    surfaceTintColor: Colors.white,
-                    elevation: 0,
-                    color: Colors.white,
-                    margin: EdgeInsets.zero,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
-                      side: BorderSide(color: Colors.grey),
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade100, width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(
+                              0.04), // Keeping it for compatibility or use withAlpha(10) if preferred, but withAlpha(10) is safer. Let's use withAlpha(10)
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -588,13 +594,11 @@ class _ForumBodyState extends State<ForumBody> {
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16.5, vertical: 8.0),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            border: const Border.fromBorderSide(
-                                BorderSide(color: Colors.grey)),
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(10),
-                              bottomRight: Radius.circular(10),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF7F9FC), // light modern grey
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(16),
+                              bottomRight: Radius.circular(16),
                             ),
                           ),
                           child: Row(

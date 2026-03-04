@@ -15,7 +15,7 @@ class AppFirebaseService {
         .then((t) {
       if (t != null) {
         storage.write(key: "client-token", value: t);
-        print('mobile token: ' + t);
+        print('mobile token: $t');
       }
     }).onError((error, stackTrace) {
       print(error);

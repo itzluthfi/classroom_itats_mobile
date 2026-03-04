@@ -21,7 +21,7 @@ class PresensiRepository {
 
     try {
       Response response = await _dio.get(
-        "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/${roleUrl}/home/presences/active?period=$academicPeriod",
+        "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/$roleUrl/home/presences/active?period=$academicPeriod",
         options: Options(
           contentType: "application/json",
           headers: {"token": value},

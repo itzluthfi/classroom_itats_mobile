@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:classroom_itats_mobile/auth/bloc/auth/auth.dart';
 import 'package:classroom_itats_mobile/auth/bloc/login/login.dart';
 import 'package:classroom_itats_mobile/auth/repositories/user_repository.dart';
-import 'package:classroom_itats_mobile/firebase_options.dart';
 import 'package:classroom_itats_mobile/services/notification_service.dart';
 import 'package:classroom_itats_mobile/user/bloc/assignment/assignment_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/forum/forum_bloc.dart';
@@ -51,7 +50,6 @@ import 'package:classroom_itats_mobile/user/repositories/presensi_repository.dar
 import 'package:classroom_itats_mobile/views/lecturer/home/home_page.dart';
 import 'package:classroom_itats_mobile/views/student/student_main_wrapper.dart';
 import 'package:classroom_itats_mobile/views/student/detail_subject/assigment_page.dart';
-import 'package:classroom_itats_mobile/views/student/home/home_page.dart';
 import 'package:classroom_itats_mobile/views/student/profile/profile_page.dart';
 import 'package:classroom_itats_mobile/views/student/detail_subject/subject_page.dart';
 import 'package:firebase_core/firebase_core.dart';

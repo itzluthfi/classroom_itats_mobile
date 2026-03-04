@@ -36,7 +36,7 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    _onLoginButtonPressed() {
+    onLoginButtonPressed() {
       BlocProvider.of<LoginBloc>(context).add(LoginButtonPressed(
           name: _nameController.text, pass: _passController.text));
     }
@@ -120,7 +120,7 @@ class _LoginFormState extends State<LoginForm> {
                             ),
                           )
                         : ElevatedButton(
-                            onPressed: _onLoginButtonPressed,
+                            onPressed: onLoginButtonPressed,
                             style: ElevatedButton.styleFrom(
                               fixedSize: const Size(320, 50),
                               surfaceTintColor: Colors.white,

@@ -155,7 +155,7 @@ List<AccordionSection> accordionList(
                             width: screenWidth * 0.5,
                             child: ElevatedButton(
                               style: const ButtonStyle(
-                                backgroundColor: MaterialStatePropertyAll(
+                                backgroundColor: WidgetStatePropertyAll(
                                   Colors.red,
                                 ),
                               ),
@@ -225,7 +225,7 @@ List<AccordionSection> accordionList(
                             width: screenWidth * 0.5,
                             child: ElevatedButton(
                               style: const ButtonStyle(
-                                backgroundColor: MaterialStatePropertyAll(
+                                backgroundColor: WidgetStatePropertyAll(
                                   Colors.amber,
                                 ),
                               ),

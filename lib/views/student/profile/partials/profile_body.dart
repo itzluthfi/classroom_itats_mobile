@@ -360,30 +360,30 @@ class _ProfileBodyState extends State<ProfileBody> {
                                                           },
                                                           style: ButtonStyle(
                                                             iconColor:
-                                                                const MaterialStatePropertyAll(
+                                                                const WidgetStatePropertyAll(
                                                                     Colors
                                                                         .orange),
                                                             splashFactory: NoSplash
                                                                 .splashFactory,
                                                             backgroundColor:
-                                                                const MaterialStatePropertyAll(
+                                                                const WidgetStatePropertyAll(
                                                                     Colors
                                                                         .transparent),
                                                             elevation:
-                                                                const MaterialStatePropertyAll(
+                                                                const WidgetStatePropertyAll(
                                                                     0),
                                                             iconSize:
-                                                                MaterialStatePropertyAll(
+                                                                WidgetStatePropertyAll(
                                                                     screenWidth *
                                                                         0.25),
                                                             fixedSize:
-                                                                MaterialStatePropertyAll(
+                                                                WidgetStatePropertyAll(
                                                               Size.fromRadius(
                                                                   screenWidth *
                                                                       0.24),
                                                             ),
                                                             shape:
-                                                                MaterialStatePropertyAll(
+                                                                WidgetStatePropertyAll(
                                                               RoundedRectangleBorder(
                                                                 borderRadius:
                                                                     BorderRadius
@@ -435,29 +435,29 @@ class _ProfileBodyState extends State<ProfileBody> {
                                                           },
                                                           style: ButtonStyle(
                                                             iconColor:
-                                                                const MaterialStatePropertyAll(
+                                                                const WidgetStatePropertyAll(
                                                                     Colors.red),
                                                             splashFactory: NoSplash
                                                                 .splashFactory,
                                                             backgroundColor:
-                                                                const MaterialStatePropertyAll(
+                                                                const WidgetStatePropertyAll(
                                                                     Colors
                                                                         .transparent),
                                                             elevation:
-                                                                const MaterialStatePropertyAll(
+                                                                const WidgetStatePropertyAll(
                                                                     0),
                                                             iconSize:
-                                                                MaterialStatePropertyAll(
+                                                                WidgetStatePropertyAll(
                                                                     screenWidth *
                                                                         0.25),
                                                             fixedSize:
-                                                                MaterialStatePropertyAll(
+                                                                WidgetStatePropertyAll(
                                                               Size.fromRadius(
                                                                   screenWidth *
                                                                       0.24),
                                                             ),
                                                             shape:
-                                                                MaterialStatePropertyAll(
+                                                                WidgetStatePropertyAll(
                                                               RoundedRectangleBorder(
                                                                 borderRadius:
                                                                     BorderRadius

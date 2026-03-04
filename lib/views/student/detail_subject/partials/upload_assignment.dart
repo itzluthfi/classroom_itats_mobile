@@ -18,7 +18,7 @@ class UploadAssignmentBody extends StatefulWidget {
 }
 
 class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
-  var _noteController = TextEditingController();
+  final _noteController = TextEditingController();
   FilePickerResult? _result;
   File? _file;
 
