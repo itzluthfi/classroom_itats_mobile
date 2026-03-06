@@ -102,63 +102,94 @@ class _ForumBodyState extends State<ForumBody> {
                           ),
                         ),
                         child: Card(
-                          color: Colors.transparent,
+                          clipBehavior: Clip.hardEdge,
+                          borderOnForeground: true,
                           margin: EdgeInsets.zero,
+                          color: Colors.transparent,
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.all(
                               Radius.circular(10),
                             ),
                           ),
-                          clipBehavior: Clip.hardEdge,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Gap(widget.subject.subjectSchedule.length > 1
-                                    ? 70
-                                    : 90),
-                                Text(
-                                  widget.subject.subjectName,
-                                  textAlign: TextAlign.start,
-                                  softWrap: true,
-                                  maxLines: 1,
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    overflow: TextOverflow.ellipsis,
-                                    color: Colors.white,
-                                  ),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              // Color Overlay to emulate the mockups (greenish/dark tint)
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0F3D3E).withOpacity(
+                                      0.4), // Dark greenish-blue overlay with reduced opacity
                                 ),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: _subjectRoomRows(
-                                          widget.subject.subjectSchedule),
+                                    Text(
+                                      widget.subject.lecturerName.toUpperCase(),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.5,
+                                      ),
                                     ),
-                                    Column(
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      widget.subject.subjectName,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                        letterSpacing: -0.5,
+                                        height: 1.1,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
                                       children: [
-                                        Text(
-                                          widget.subject.subjectClass,
-                                          style: const TextStyle(
-                                            height: 1.8,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w800,
-                                            // color: Color(0xFF764AF1),
-                                            color: Colors.white,
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: _subjectRoomRows(
+                                                widget.subject.subjectSchedule),
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Colors.white.withOpacity(0.25),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            widget.subject.subjectClass,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w900,
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -661,25 +692,67 @@ class _ForumBodyState extends State<ForumBody> {
 
   List<Widget> _subjectRoomRows(List<Map<String, dynamic>> subjectSchedules) {
     List<Widget> data = List.empty(growable: true);
+
+    if (subjectSchedules.isEmpty) {
+      data.add(const Text(
+        "Belum ada jadwal",
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: Colors.white70,
+          fontStyle: FontStyle.italic,
+        ),
+      ));
+      return data;
+    }
+
     for (var subjectSchedule in subjectSchedules) {
+      // Safety check for keys
+      final type = subjectSchedule["subject_type"] ?? "-";
+      final room = subjectSchedule["subject_room"] ?? "-";
+      final day = subjectSchedule["day"] ?? "";
+      final start = subjectSchedule["time_start"];
+      final end = subjectSchedule["time_end"];
+
+      String timeStr = "";
+      if (start != null && end != null) {
+        try {
+          final fmtStart =
+              DateFormat("HH:mm").format(DateFormat().add_Hms().parse(start));
+          final fmtEnd =
+              DateFormat("HH:mm").format(DateFormat().add_Hms().parse(end));
+          timeStr = ", $fmtStart-$fmtEnd";
+        } catch (e) {
+          timeStr = "";
+        }
+      }
+
       data.add(
         Row(
-          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Text(
-              "[${subjectSchedule["subject_type"]}] ${subjectSchedule["subject_room"]} ${subjectSchedule["day"]}, ${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subjectSchedule["time_start"]))}-${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subjectSchedule["time_end"]))}",
+              "[$type] $room $day$timeStr",
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 16, // Adjusted slightly for better fit
                 fontWeight: FontWeight.w600,
-                // color: Color(0xFF764AF1),
                 color: Colors.white,
               ),
-            ),
+            )
           ],
         ),
       );
     }
     return data;
+  }
+
+  String _formatCommentDate(String dateStr) {
+    try {
+      DateTime dt = DateTime.parse(dateStr).toLocal();
+      return DateFormat("yyyy-MM-dd HH:mm:ss").format(dt);
+    } catch (e) {
+      // Fallback manual formatting if parsing fails
+      return dateStr.replaceAll("T", " ").split(".")[0].replaceAll("Z", "");
+    }
   }
 
   List<Widget> _forumComments(
@@ -739,7 +812,7 @@ class _ForumBodyState extends State<ForumBody> {
                   Row(
                     children: [
                       Text(
-                        comment.createdAt,
+                        _formatCommentDate(comment.createdAt),
                         style: const TextStyle(
                           fontSize: 10,
                         ),

@@ -165,14 +165,14 @@ Widget _buildWeeklyCard(
   String weekStr = (index + 1).toString().padLeft(2, '0');
 
   return Container(
-    margin: const EdgeInsets.only(bottom: 16),
+    margin: const EdgeInsets.only(bottom: 12),
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       border: Border.all(color: Colors.grey.shade100, width: 1),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.04),
+          color: Colors.black.withOpacity(0.04), // or withAlpha(10)
           blurRadius: 10,
           offset: const Offset(0, 4),
         )
@@ -181,13 +181,13 @@ Widget _buildWeeklyCard(
     child: Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         iconColor: const Color(0xFF8692A6),
         collapsedIconColor: const Color(0xFF8692A6),
         title: Row(
           children: [
             Container(
-              width: 44,
+              width: 44, // Slightly increased size
               height: 44,
               decoration: const BoxDecoration(
                 color: Color(0xFFE8F0FE),
@@ -199,12 +199,12 @@ Widget _buildWeeklyCard(
                   style: const TextStyle(
                     color: Color(0xFF1E5AD6),
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 14, // Back to normal font
                   ),
                 ),
               ),
             ),
-            const Gap(16),
+            const Gap(14),
             Text(
               "Minggu ke - ${index + 1}",
               style: const TextStyle(
@@ -215,7 +215,7 @@ Widget _buildWeeklyCard(
             ),
           ],
         ),
-        childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
           // Capaian Pembelajaran
           const Align(
@@ -230,7 +230,7 @@ Widget _buildWeeklyCard(
               ),
             ),
           ),
-          const Gap(8),
+          const Gap(6),
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
@@ -245,7 +245,7 @@ Widget _buildWeeklyCard(
               textAlign: TextAlign.justify,
             ),
           ),
-          const Gap(16),
+          const Gap(12),
 
           // Rencana Pembelajaran
           const Align(
@@ -260,7 +260,7 @@ Widget _buildWeeklyCard(
               ),
             ),
           ),
-          const Gap(8),
+          const Gap(6),
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
@@ -275,7 +275,7 @@ Widget _buildWeeklyCard(
               textAlign: TextAlign.justify,
             ),
           ),
-          const Gap(24),
+          const Gap(16),
 
           // Action Buttons
           SizedBox(

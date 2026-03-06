@@ -164,93 +164,124 @@ List<Widget> _studentAssignmentScore(
   List<Widget> scores = List.empty(growable: true);
 
   for (var studentAssignmentScore in studentAssignmentScores) {
+    Color mainColor = const Color(0xFF1E5AD6);
+    Color bgColor = const Color(0xFFE8F0FE);
+    IconData iconData = Icons.assignment_outlined;
+    Color progressColor;
+
+    if (studentAssignmentScore.score <= 50) {
+      progressColor = Colors.red;
+    } else if (studentAssignmentScore.score <= 70) {
+      progressColor = Colors.amber.shade700;
+    } else {
+      progressColor = const Color(0xFF00A389); // Match green theme
+    }
+
     scores.add(
-      Row(
-        children: [
-          SizedBox(
-            width: screenWidth,
-            height: 100,
-            child: Container(
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.all(
-                  Radius.circular(10),
-                ),
+      Container(
+        margin: const EdgeInsets.only(bottom: 10), // Minimal gap
+        padding: const EdgeInsets.symmetric(
+            horizontal: 16, vertical: 12), // Very tight vertical padding
+        width: screenWidth,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade100, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(10),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Left Rounded Icon
+            Container(
+              width: 38, // Compressed size
+              height: 38, // Compressed size
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(10),
               ),
-              width: screenWidth,
-              height: 100,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Center(
+                child: Icon(iconData, color: mainColor, size: 20),
+              ),
+            ),
+            const Gap(12),
+            // Middle Content: Title and Subtitle
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Card(
-                    surfaceTintColor: Colors.white,
-                    elevation: 0,
-                    color: studentAssignmentScore.score <= 50
-                        ? Colors.red
-                        : studentAssignmentScore.score > 50 &&
-                                studentAssignmentScore.score <= 70
-                            ? Colors.amber
-                            : Colors.green,
-                    margin: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: const BorderRadius.all(
-                        Radius.circular(10),
-                      ),
-                      side: BorderSide(
-                          color: studentAssignmentScore.score <= 50
-                              ? Colors.red
-                              : studentAssignmentScore.score > 50 &&
-                                      studentAssignmentScore.score <= 70
-                                  ? Colors.amber
-                                  : Colors.green),
+                  Text(
+                    studentAssignmentScore.assignmentTitle,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E1E1E),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 15, vertical: 15),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              SizedBox(
-                                width: screenWidth * 0.5,
-                                child: Text(
-                                  studentAssignmentScore.assignmentTitle,
-                                  maxLines: 3,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              Gap(screenWidth * 0.2),
-                              SizedBox(
-                                width: screenWidth * 0.2,
-                                child: Text(
-                                  "${studentAssignmentScore.score}",
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              )
-                            ],
-                          ),
-                        ],
-                      ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Gap(4),
+                  Text(
+                    "Tugas / Kuis",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+            const Gap(16),
+            // Right Content: Score and Progress Line
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "${studentAssignmentScore.score}",
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                const Gap(8),
+                // Tiny Progress Bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 40 *
+                            (studentAssignmentScore.score / 100)
+                                .clamp(0.0, 1.0),
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: progressColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
-    scores.add(const Gap(10));
   }
 
   return scores;
