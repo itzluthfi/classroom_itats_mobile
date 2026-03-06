@@ -166,13 +166,48 @@ List<AccordionSection> _assignmentList(context, state, TextStyle headerStyle,
                             ),
                           ),
                           onPressed: () {
-                            showDialog<String>(
+                            showModalBottomSheet(
                               context: context,
-                              builder: (BuildContext context) =>
-                                  UploadAssignmentBody(
-                                screenWidth: screenWidth,
-                                assignmentId: assignment.assignmentId,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.white,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(20)),
                               ),
+                              builder: (BuildContext context) {
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom: MediaQuery.of(context)
+                                        .viewInsets
+                                        .bottom,
+                                  ),
+                                  child: Wrap(
+                                    children: [
+                                      Column(
+                                        children: [
+                                          Container(
+                                            width: 40,
+                                            height: 5,
+                                            margin: const EdgeInsets.only(
+                                                top: 12, bottom: 8),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade300,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                          UploadAssignmentBody(
+                                            screenWidth: screenWidth,
+                                            assignmentId:
+                                                assignment.assignmentId,
+                                          ),
+                                          const Gap(24),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             );
                           },
                           child: const Text("Upload Tugas"),

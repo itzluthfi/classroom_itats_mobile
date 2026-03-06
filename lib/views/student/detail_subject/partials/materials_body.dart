@@ -6,6 +6,7 @@ import 'package:classroom_itats_mobile/models/subject.dart';
 import 'package:classroom_itats_mobile/user/bloc/lecture/lecture_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/study_achievement/study_achievement_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/study_material/study_material_bloc.dart';
+import 'package:classroom_itats_mobile/views/student/detail_subject/partials/assignments_body.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -391,24 +392,45 @@ Widget _buildWeeklyCard(
                 // Tugas Button (only show if assignment exists)
                 if (assignment != null)
                   ElevatedButton.icon(
-                    onPressed: () async {
-                      await userRepository.setWidgetState(
-                          "student_material", false);
-                      await userRepository.setWidgetState("forum", false);
-                      await userRepository.setWidgetState(
-                          "student_presence", false);
-                      await userRepository.setWidgetState(
-                          "student_score_recap", false);
-                      await userRepository.setWidgetState(
-                          "subject_member", false);
-
-                      List<Object?> object = List.empty(growable: true);
-                      object.add(subject);
-                      object.add(assignment);
-
-                      Navigator.of(context).pushReplacementNamed(
-                          "/student/assignments",
-                          arguments: List<Object>.from(object));
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.white,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(20)),
+                        ),
+                        builder: (BuildContext context) {
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              bottom: MediaQuery.of(context).viewInsets.bottom,
+                            ),
+                            child: FractionallySizedBox(
+                              heightFactor: 0.85,
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 5,
+                                    margin: const EdgeInsets.only(
+                                        top: 12, bottom: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade300,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: StudentAssignmentsBody(
+                                      assignment: assignment,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
                     },
                     icon: const Icon(Icons.assignment_outlined, size: 18),
                     label: const Text("Tugas"),

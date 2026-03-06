@@ -1,9 +1,13 @@
 import 'package:classroom_itats_mobile/user/repositories/academic_period_repository.dart';
 import 'package:classroom_itats_mobile/user/bloc/academic_period/academic_period_bloc.dart';
+import 'package:classroom_itats_mobile/user/bloc/assignment/assignment_bloc.dart';
+import 'package:classroom_itats_mobile/models/assignment.dart';
+import 'package:classroom_itats_mobile/views/student/detail_subject/partials/upload_assignment.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:classroom_itats_mobile/views/student/home/partials/app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:intl/intl.dart';
 
 class StudentTugasPage extends StatefulWidget {
   final AcademicPeriodRepository? academicPeriodRepository;
@@ -23,45 +27,9 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
   // ignore: constant_identifier_names
   static const int STATUS_SELESAI = 2;
 
-  // Data Hardcode untuk menguji desain
-  final List<Map<String, dynamic>> mockData = [
-    {
-      "mata_kuliah": "KECERDASAN BUATAN",
-      "judul_tugas": "Tugas 1: Neural Networks Architectures",
-      "minggu": "Minggu 8",
-      "deadline": "25 Okt, 23:59",
-      "kelas": "IF-44-01",
-      "status": STATUS_BELUM,
-    },
-    {
-      "mata_kuliah": "PEMROGRAMAN WEB",
-      "judul_tugas": "Project 2: RESTful API Integration",
-      "minggu": "Minggu 7",
-      "deadline": "18 Okt, 23:59",
-      "kelas": "IF-44-01",
-      "status": STATUS_TERLAMBAT,
-    },
-    {
-      "mata_kuliah": "BASIS DATA",
-      "judul_tugas": "Latihan: Normalisasi Database",
-      "minggu": "Minggu 7",
-      "dikumpulkan": "17 Okt",
-      "kelas": "IF-44-01",
-      "status": STATUS_SELESAI,
-      "file_name": "tugas_basis_data_v1.pdf",
-      "file_info": "Uploaded 17 Oct • 2.4 MB",
-    },
-    {
-      "mata_kuliah": "KEAMANAN SIBER",
-      "judul_tugas": "Analisis: Vulnerability Scanning",
-      "minggu": "Minggu 9",
-      "deadline": "1 Nov, 23:59",
-      "kelas": "IF-44-01",
-      "status": STATUS_BELUM,
-    },
-  ];
-
-  late List<Map<String, dynamic>> _filteredData;
+  // Data dinamis dari API
+  List<Assignment> _allAssignments = [];
+  List<Assignment> _filteredAssignments = [];
   final TextEditingController _searchController = TextEditingController();
 
   String _selectedStatusFilter = 'Semua';
@@ -89,14 +57,18 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
 
   int _getBadgeCount(String filter) {
     if (filter == 'Semua') {
-      return mockData.length;
+      return _allAssignments.length;
     } else if (filter == 'Belum') {
-      return mockData.where((item) => item['status'] == STATUS_BELUM).length;
+      return _allAssignments
+          .where((item) =>
+              item.totalSubmited == 0 && item.dueDate.isAfter(DateTime.now()))
+          .length;
     } else if (filter == 'Selesai') {
-      return mockData.where((item) => item['status'] == STATUS_SELESAI).length;
+      return _allAssignments.where((item) => item.totalSubmited > 0).length;
     } else if (filter == 'Terlambat') {
-      return mockData
-          .where((item) => item['status'] == STATUS_TERLAMBAT)
+      return _allAssignments
+          .where((item) =>
+              item.totalSubmited == 0 && item.dueDate.isBefore(DateTime.now()))
           .length;
     }
     return 0;
@@ -105,10 +77,13 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
   void _filterData() {
     final query = _searchController.text.toLowerCase();
     setState(() {
-      _filteredData = mockData.where((item) {
-        final matkul = item['mata_kuliah'].toString().toLowerCase();
-        final judul = item['judul_tugas'].toString().toLowerCase();
-        final status = item['status'] as int;
+      _filteredAssignments = _allAssignments.where((item) {
+        final matkul = item.subjectName.toLowerCase();
+        final judul = item.assignmentTitle.toLowerCase();
+
+        final isSelesai = item.totalSubmited > 0;
+        final isTerlambat = !isSelesai && item.dueDate.isBefore(DateTime.now());
+        final isBelum = !isSelesai && item.dueDate.isAfter(DateTime.now());
 
         // Search condition
         final matchesSearch = matkul.contains(query) || judul.contains(query);
@@ -116,11 +91,11 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
         // Status condition
         bool matchesStatus = true;
         if (_selectedStatusFilter == 'Belum') {
-          matchesStatus = status == STATUS_BELUM;
+          matchesStatus = isBelum;
         } else if (_selectedStatusFilter == 'Selesai') {
-          matchesStatus = status == STATUS_SELESAI;
+          matchesStatus = isSelesai;
         } else if (_selectedStatusFilter == 'Terlambat') {
-          matchesStatus = status == STATUS_TERLAMBAT;
+          matchesStatus = isTerlambat;
         }
 
         return matchesSearch && matchesStatus;
@@ -130,218 +105,258 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Warna latar belakang terang
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (widget.academicPeriodRepository != null)
-              StudentAppBar(
-                  academicPeriodRepository: widget.academicPeriodRepository!),
-            if (widget.academicPeriodRepository == null)
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                color: Colors.white,
-                child: const Text('Daftar Tugas',
-                    style: TextStyle(
-                        color: Color(0xFF14307E),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20)),
-              ),
-            // Header "Tugas Aktif"
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.only(
-                  top: 24.0, bottom: 8.0, left: 16.0, right: 16.0),
-              color: const Color(0xFFF8FAFC),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Text(
-                      "Tugas Aktif (${_getBadgeCount('Semua')})",
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF1E293B),
-                        letterSpacing: -0.5,
-                      ),
-                    ),
+    return MultiBlocListener(
+        listeners: [
+          BlocListener<AcademicPeriodBloc, AcademicPeriodState>(
+            listener: (context, state) {
+              if (state is AcademicPeriodLoaded &&
+                  state.currentAcademicPeriod.isNotEmpty) {
+                context.read<AssignmentBloc>().add(
+                    GetActiveAssignments(period: state.currentAcademicPeriod));
+              }
+            },
+          ),
+          BlocListener<AssignmentBloc, AssignmentState>(
+            listener: (context, state) {
+              if (state is AssignmentLoaded) {
+                setState(() {
+                  _allAssignments = state.assignments;
+                  _filterData();
+                });
+              }
+            },
+          ),
+        ],
+        child: Scaffold(
+          backgroundColor:
+              const Color(0xFFF8FAFC), // Warna latar belakang terang
+          body: SafeArea(
+            child: Column(
+              children: [
+                if (widget.academicPeriodRepository != null)
+                  StudentAppBar(
+                      academicPeriodRepository:
+                          widget.academicPeriodRepository!),
+                if (widget.academicPeriodRepository == null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 16),
+                    color: Colors.white,
+                    child: const Text('Daftar Tugas',
+                        style: TextStyle(
+                            color: Color(0xFF14307E),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20)),
                   ),
-                  const SizedBox(width: 8),
-                  if (widget.academicPeriodRepository != null)
-                    BlocBuilder<AcademicPeriodBloc, AcademicPeriodState>(
-                      builder: (context, periodState) {
-                        String periodName = "Memuat periode...";
-                        if (periodState is AcademicPeriodLoaded) {
-                          try {
-                            // Find the currently active academic period description safely
-                            final matched =
-                                periodState.academicPeriod.firstWhere(
-                              (p) =>
-                                  p.academicPeriodId ==
-                                  periodState.currentAcademicPeriod,
-                            );
-                            periodName = matched.academicPeriodDecription;
-                          } catch (e) {
-                            periodName = periodState.currentAcademicPeriod;
-                          }
-                        }
-                        return Text(
-                          periodName,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.blueGrey.shade600,
-                            fontWeight: FontWeight.w500,
+                // Header "Tugas Aktif"
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.only(
+                      top: 24.0, bottom: 8.0, left: 16.0, right: 16.0),
+                  color: const Color(0xFFF8FAFC),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "Tugas Aktif (${_getBadgeCount('Semua')})",
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF1E293B),
+                            letterSpacing: -0.5,
                           ),
-                        );
-                      },
-                    ),
-                ],
-              ),
-            ),
-            // Bagian Search Bar Custom
-            Container(
-              color: const Color(0xFFF8FAFC),
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: "Cari tugas atau matakuliah...",
-                    hintStyle:
-                        TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                    prefixIcon:
-                        const Icon(Icons.search, color: Color(0xFF14307E)),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 14, horizontal: 20),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: const BorderSide(
-                          color: Color(0xFF14307E), width: 1.5),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Filter Status & Matkul Rows
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                children: _statusOptions.map((String filter) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: ChoiceChip(
-                      label: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(filter),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: _selectedStatusFilter == filter
-                                  ? Colors.white.withOpacity(0.2)
-                                  : Colors.blueGrey.shade50,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              _getBadgeCount(filter).toString(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (widget.academicPeriodRepository != null)
+                        BlocBuilder<AcademicPeriodBloc, AcademicPeriodState>(
+                          builder: (context, periodState) {
+                            String periodName = "Memuat periode...";
+                            if (periodState is AcademicPeriodLoaded) {
+                              try {
+                                // Find the currently active academic period description safely
+                                final matched =
+                                    periodState.academicPeriod.firstWhere(
+                                  (p) =>
+                                      p.academicPeriodId ==
+                                      periodState.currentAcademicPeriod,
+                                );
+                                periodName = matched.academicPeriodDecription;
+                              } catch (e) {
+                                periodName = periodState.currentAcademicPeriod;
+                              }
+                            }
+                            return Text(
+                              periodName,
                               style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: _selectedStatusFilter == filter
-                                    ? Colors.white
-                                    : Colors.blueGrey.shade700,
+                                fontSize: 14,
+                                color: Colors.blueGrey.shade600,
+                                fontWeight: FontWeight.w500,
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      selected: _selectedStatusFilter == filter,
-                      selectedColor: const Color(0xFF1E3A8A),
-                      checkmarkColor: Colors.transparent,
-                      showCheckmark: false,
-                      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                      labelStyle: TextStyle(
-                        color: _selectedStatusFilter == filter
-                            ? Colors.white
-                            : Colors.blueGrey.shade700,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                      backgroundColor: Colors.white,
-                      side: BorderSide(
-                        color: _selectedStatusFilter == filter
-                            ? Colors.transparent
-                            : Colors.grey.shade300,
-                      ),
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _selectedStatusFilter = selected ? filter : 'Semua';
-                          _filterData();
-                        });
-                      },
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                // Bagian Search Bar Custom
+                Container(
+                  color: const Color(0xFFF8FAFC),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  );
-                }).toList(),
-              ),
-            ),
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: "Cari tugas atau matakuliah...",
+                        hintStyle: TextStyle(
+                            color: Colors.grey.shade400, fontSize: 14),
+                        prefixIcon:
+                            const Icon(Icons.search, color: Color(0xFF14307E)),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 14, horizontal: 20),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF14307E), width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
 
-            // List Tugas Berupa Custom Cards
-            Expanded(
-              child: _filteredData.isEmpty
-                  ? Center(
-                      child: Text(
-                        "Tidak ditemukan tugas\ndengan kata kunci tersebut.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey.shade500),
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      itemCount: _filteredData.length,
-                      itemBuilder: (context, index) {
-                        final data = _filteredData[index];
-                        return _buildTugasCard(data);
-                      },
-                    ),
+                // Filter Status & Matkul Rows
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    children: _statusOptions.map((String filter) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ChoiceChip(
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(filter),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _selectedStatusFilter == filter
+                                      ? Colors.white.withOpacity(0.2)
+                                      : Colors.blueGrey.shade50,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  _getBadgeCount(filter).toString(),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: _selectedStatusFilter == filter
+                                        ? Colors.white
+                                        : Colors.blueGrey.shade700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          selected: _selectedStatusFilter == filter,
+                          selectedColor: const Color(0xFF1E3A8A),
+                          checkmarkColor: Colors.transparent,
+                          showCheckmark: false,
+                          labelPadding:
+                              const EdgeInsets.symmetric(horizontal: 4),
+                          labelStyle: TextStyle(
+                            color: _selectedStatusFilter == filter
+                                ? Colors.white
+                                : Colors.blueGrey.shade700,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                          backgroundColor: Colors.white,
+                          side: BorderSide(
+                            color: _selectedStatusFilter == filter
+                                ? Colors.transparent
+                                : Colors.grey.shade300,
+                          ),
+                          onSelected: (bool selected) {
+                            setState(() {
+                              _selectedStatusFilter =
+                                  selected ? filter : 'Semua';
+                              _filterData();
+                            });
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                // List Tugas Berupa Custom Cards
+                Expanded(
+                  child: BlocBuilder<AssignmentBloc, AssignmentState>(
+                    builder: (context, state) {
+                      if (state is AssignmentLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      return _filteredAssignments.isEmpty
+                          ? Center(
+                              child: Text(
+                                "Tidak ditemukan tugas\ndengan kata kunci tersebut.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey.shade500),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              itemCount: _filteredAssignments.length,
+                              itemBuilder: (context, index) {
+                                final data = _filteredAssignments[index];
+                                return _buildTugasCard(data);
+                              },
+                            );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        ));
   }
 
-  Widget _buildTugasCard(Map<String, dynamic> data) {
-    int status = data['status'];
+  Widget _buildTugasCard(Assignment data) {
+    int status;
+    if (data.totalSubmited > 0) {
+      status = STATUS_SELESAI;
+    } else if (data.dueDate.isBefore(DateTime.now())) {
+      status = STATUS_TERLAMBAT;
+    } else {
+      status = STATUS_BELUM;
+    }
     Color badgeBgColor;
     Color badgeTextColor;
     String badgeText;
@@ -383,7 +398,7 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
-                  data['minggu'],
+                  "Minggu ${data.weekId}",
                   style: TextStyle(
                     color: Colors.grey.shade500,
                     fontSize: 12,
@@ -396,7 +411,7 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
 
             // Konten Tengah: Mata Kuliah & Judul Tugas
             Text(
-              data['mata_kuliah'],
+              data.subjectName,
               style: const TextStyle(
                 color: Color(0xFF3B82F6), // Biru Cyan seperti desain
                 fontSize: 12,
@@ -406,7 +421,7 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
             ),
             const Gap(4),
             Text(
-              data['judul_tugas'],
+              data.assignmentTitle,
               style: const TextStyle(
                 color: Color(0xFF0F172A),
                 fontSize: 16,
@@ -435,8 +450,8 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                     const Gap(4),
                     Text(
                       status == STATUS_SELESAI
-                          ? "Dikumpulkan: ${data['dikumpulkan']}"
-                          : "Deadline: ${data['deadline']}",
+                          ? "Dikumpulkan: Selesai"
+                          : "Deadline: ${DateFormat("d MMM, HH:mm").format(data.dueDate)}",
                       style: TextStyle(
                         color: status == STATUS_SELESAI
                             ? const Color(0xFF10B981)
@@ -454,7 +469,7 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                         size: 14, color: Colors.grey.shade600),
                     const Gap(4),
                     Text(
-                      "Kelas: ${data['kelas']}",
+                      "Kelas: ${data.subjectClass}",
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 12,
@@ -514,7 +529,9 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            data['file_name'],
+                            data.fileName.isNotEmpty
+                                ? data.fileName
+                                : "File Submission",
                             style: const TextStyle(
                               color: Color(0xFF0F172A),
                               fontSize: 13,
@@ -524,7 +541,7 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            data['file_info'],
+                            "Uploaded",
                             style: TextStyle(
                               color: Colors.grey.shade500,
                               fontSize: 11,
@@ -536,7 +553,17 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                     IconButton(
                       icon: const Icon(Icons.file_download_outlined,
                           color: Color(0xFF64748B)),
-                      onPressed: () {},
+                      onPressed: () {
+                        // Karena Endpoint /students/home/assignments/active
+                        // tidak mengembalikan `assignment_link` dan `assignment_file`
+                        // dari file yang disubmit mahasiswa (berbeda dengan /detail),
+                        // maka memanggil aksi download memerlukan ID submit.
+                        // Untuk saat ini kita memanggil check detail assignment.
+                        BlocProvider.of<AssignmentBloc>(context).add(
+                            GetStudentSubmitedAssignment(
+                                assignmentId: data.assignmentId));
+                        // TODO: Download actual logic should rely on state from GetStudentSubmitedAssignment.
+                      },
                       constraints: const BoxConstraints(),
                       padding: EdgeInsets.zero,
                     ),
@@ -548,7 +575,48 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(20)),
+                      ),
+                      builder: (BuildContext context) {
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            bottom: MediaQuery.of(context).viewInsets.bottom,
+                          ),
+                          child: Wrap(
+                            children: [
+                              Column(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 5,
+                                    margin: const EdgeInsets.only(
+                                        top: 12, bottom: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade300,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  UploadAssignmentBody(
+                                    screenWidth:
+                                        MediaQuery.of(context).size.width,
+                                    assignmentId: data.assignmentId,
+                                  ),
+                                  const Gap(24),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
                   icon: const Icon(Icons.attach_file, size: 18),
                   label: const Text(
                     "Unggah Tugas",

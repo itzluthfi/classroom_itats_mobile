@@ -22,6 +22,18 @@ class GetStudentAssignment extends AssignmentEvent {
       "GetStudentAssignment {masterActivityId: $masterActivityId}";
 }
 
+class GetActiveAssignments extends AssignmentEvent {
+  final String period;
+
+  const GetActiveAssignments({required this.period});
+
+  @override
+  List<Object> get props => [period];
+
+  @override
+  String toString() => "GetActiveAssignments {period: $period}";
+}
+
 class GetStudentAssignmentWeek extends AssignmentEvent {
   final String masterActivityId;
   final int weekId;

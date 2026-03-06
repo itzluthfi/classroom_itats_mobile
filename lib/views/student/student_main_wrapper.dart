@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/presensi/presensi_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/academic_period/academic_period_bloc.dart';
+import 'package:classroom_itats_mobile/user/bloc/assignment/assignment_bloc.dart';
 
 class StudentMainWrapper extends StatefulWidget {
   final AcademicPeriodRepository academicPeriodRepository;
@@ -44,17 +45,24 @@ class _StudentMainWrapperState extends State<StudentMainWrapper> {
     final unselectedColor = Colors.grey.shade500;
 
     return PopScope(
-      child: BlocListener<AcademicPeriodBloc, AcademicPeriodState>(
-        listener: (context, state) {
-          if (state is AcademicPeriodLoaded) {
-            final selectedPeriod = state.currentAcademicPeriod;
-            if (selectedPeriod.isNotEmpty) {
-              context
-                  .read<PresensiBloc>()
-                  .add(LoadActivePresences(selectedPeriod));
-            }
-          }
-        },
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<AcademicPeriodBloc, AcademicPeriodState>(
+            listener: (context, state) {
+              if (state is AcademicPeriodLoaded) {
+                final selectedPeriod = state.currentAcademicPeriod;
+                if (selectedPeriod.isNotEmpty) {
+                  context
+                      .read<PresensiBloc>()
+                      .add(LoadActivePresences(selectedPeriod));
+                  context
+                      .read<AssignmentBloc>()
+                      .add(GetActiveAssignments(period: selectedPeriod));
+                }
+              }
+            },
+          ),
+        ],
         child: Scaffold(
           // AnimatedSwitcher memberikan efek fade saat tap berpindah
           body: AnimatedSwitcher(
@@ -126,25 +134,42 @@ class _StudentMainWrapperState extends State<StudentMainWrapper> {
                   children: [
                     _buildIcon('assets/application_images/tugas.png',
                         _selectedIndex == 2, primaryColor, unselectedColor),
-                    // Hardcoded badge (2) since Tugas uses mockData for now
-                    Positioned(
-                      right: -5,
-                      top: -5,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Text(
-                          '2', // Corresponding to 2 STATUS_BELUM mock tasks
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                    BlocBuilder<AssignmentBloc, AssignmentState>(
+                      builder: (context, state) {
+                        if (state is AssignmentLoaded) {
+                          // Filter tasks that haven't been submitted and are past or before deadline
+                          // The 'Belum' status specifically is what we used in the assignments logic:
+                          // totalSubmited == 0 && dueDate.isAfter(DateTime.now())
+                          final unsubmittedCount = state.assignments
+                              .where((item) =>
+                                  item.totalSubmited == 0 &&
+                                  item.dueDate.isAfter(DateTime.now()))
+                              .length;
+
+                          if (unsubmittedCount > 0) {
+                            return Positioned(
+                              right: -5,
+                              top: -5,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  '$unsubmittedCount',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                        return const SizedBox.shrink();
+                      },
                     ),
                   ],
                 ),

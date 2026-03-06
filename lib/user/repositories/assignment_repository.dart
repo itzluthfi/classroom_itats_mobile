@@ -13,6 +13,29 @@ class AssignmentRepository {
       aOptions: AndroidOptions(encryptedSharedPreferences: true));
   final _dio = Dio();
 
+  Future<List<Assignment>> getActiveAssignments(String period) async {
+    final value = await storage.read(key: "token");
+
+    String url =
+        "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/students/home/assignments/active";
+    if (period.isNotEmpty) {
+      url += "?period=$period";
+    }
+
+    Response response = await _dio.get(
+      url,
+      options: Options(
+        contentType: "application/json",
+        headers: {"token": value},
+      ),
+    );
+
+    final decodedData = response.data["data"] as List;
+    final assignments =
+        decodedData.map((data) => Assignment.fromJson(data)).toList();
+    return assignments;
+  }
+
   Future<List<Assignment>> getStudyAssignment(String masterActivityId) async {
     final value = await storage.read(key: "token");
 

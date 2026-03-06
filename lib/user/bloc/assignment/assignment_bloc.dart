@@ -39,6 +39,26 @@ class AssignmentBloc extends Bloc<AssignmentEvent, AssignmentState> {
       }
     });
 
+    on<GetActiveAssignments>((event, emit) async {
+      emit(AssignmentLoading());
+      try {
+        var assignments =
+            await assignmentRepository.getActiveAssignments(event.period);
+
+        emit(AssignmentLoaded(
+          assignments: assignments,
+          assignmentsJoin: List.empty(),
+          studentAssigmentScores: List.empty(),
+          subjects: List.empty(),
+          scoreType: List.empty(),
+          weekAssignments: List.empty(),
+          studentAssignmentSubmission: null,
+        ));
+      } catch (e) {
+        emit(AssignmentLoadFailed());
+      }
+    });
+
     on<GetStudentAssignmentWeek>((event, emit) async {
       emit(AssignmentLoading());
       try {
@@ -186,20 +206,26 @@ class AssignmentBloc extends Bloc<AssignmentEvent, AssignmentState> {
               event.fileName,
             );
 
-            if (status != 201) {
-              await NotificationService().showNotification(
-                  title: "Failed",
-                  body: "Mohon maaf, sistem gagal menyimpan submission anda");
+            if (status != 201 && status != 200) {
+              try {
+                await NotificationService().showNotification(
+                    title: "Failed",
+                    body: "Mohon maaf, sistem gagal menyimpan submission anda");
+              } catch (_) {}
               emit(CreateAssignmentFailed());
             } else {
-              await NotificationService().showNotification(
-                  title: "Success", body: "Sukses menyimpan submission anda");
+              try {
+                await NotificationService().showNotification(
+                    title: "Success", body: "Sukses menyimpan submission anda");
+              } catch (_) {}
               emit(CreateAssignmentSuccess());
             }
           } catch (e) {
-            await NotificationService().showNotification(
-                title: "Failed",
-                body: "Mohon maaf, sistem gagal menyimpan submission anda");
+            try {
+              await NotificationService().showNotification(
+                  title: "Failed",
+                  body: "Mohon maaf, sistem gagal menyimpan submission anda");
+            } catch (_) {}
             emit(CreateAssignmentFailed());
           }
         } else if (event is GetStudentSubmitedAssignment) {
