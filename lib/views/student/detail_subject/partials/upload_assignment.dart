@@ -30,10 +30,20 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
     return BlocConsumer<AssignmentBloc, AssignmentState>(
       listener: (context, state) {
         if (state is CreateAssignmentSuccess) {
+          // Reload data tugas sebelum tutup bottom sheet
+          BlocProvider.of<AssignmentBloc>(context).add(
+            GetStudentSubmitedAssignment(assignmentId: widget.assignmentId),
+          );
           // Tutup bottom sheet jika sukses
           Navigator.pop(context, 'OK');
         } else if (state is CreateAssignmentFailed) {
-          // Tampilkan snackbar atau biarkan notifikasi bawaan
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Gagal mengunggah tugas. Silakan coba lagi.'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       },
       builder: (context, state) {

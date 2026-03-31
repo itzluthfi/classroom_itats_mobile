@@ -39,7 +39,8 @@ class StudyAchievementBloc
           studyAchievements: studyAchievements,
           assignments: assignments,
         ));
-      } catch (e) {
+      } catch (e, stackTrace) {
+        print("ERROR StudyAchievementBloc: $e\n$stackTrace");
         emit(StudyAchievementLoadFailed());
       }
     });

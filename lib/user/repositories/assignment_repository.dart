@@ -321,30 +321,50 @@ class AssignmentRepository {
       });
     }
 
-    _dio.httpClientAdapter = IOHttpClientAdapter(
-      createHttpClient: () {
-        HttpClient client = HttpClient();
-        client.badCertificateCallback =
-            (X509Certificate cert, String host, int port) {
-          return true;
-        };
-        return client;
-      },
-    );
 
-    Response response = await _dio.post(
-      "${dotenv.get("WEB_PROTOCOL")}${dotenv.get("WEB_URL")}/api/students/assignments/submit",
-      data: formData,
-      options: Options(
-        contentType: "application/x-www-form-urlencoded",
-        headers: {
-          "token": value,
-        },
-      ),
-    );
 
-    final decodedData = response.statusCode ?? 0;
+    // Force HTTPS — WEB_URL harus tanpa protocol, kita hardcode https://
+    final webUrl = dotenv.get("WEB_URL").replaceAll(RegExp(r'^https?://'), '');
+    final submitUrl = "https://$webUrl/api/students/assignments/submit";
 
-    return decodedData;
+    try {
+      Response response = await _dio.post(
+        submitUrl,
+        data: formData,
+        options: Options(
+          responseType: ResponseType.plain,
+          followRedirects: false,
+          validateStatus: (status) => status! < 500,
+          receiveTimeout: const Duration(seconds: 30),
+          sendTimeout: const Duration(seconds: 30),
+          headers: {
+            "token": value,
+            "Accept": "application/json",
+            "User-Agent": "ClassroomItatsMobileApp/1.0",
+          },
+        ),
+      );
+
+      print("======== API SUBMIT RESPONSE ========");
+      print("Status Code: ${response.statusCode}");
+      print("Response Data: ${response.data}");
+      print("=====================================");
+
+      final decodedData = response.statusCode ?? 0;
+      return decodedData;
+    } catch (e) {
+      if (e is DioException) {
+        print("======== API SUBMIT ERROR ========");
+        print("Status Code: ${e.response?.statusCode}");
+        print("Response Data: ${e.response?.data}");
+        print("Type: ${e.type}");
+        print("Message: ${e.message}");
+        print("Error: ${e.error}");
+        print("================================");
+      } else {
+        print("Error submitting assignment: $e");
+      }
+      return 0; // Kembalikan 0 sebagai tanda gagal (akan diproses di BLoC).
+    }
   }
 }

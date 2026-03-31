@@ -50,6 +50,19 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Jika AcademicPeriodBloc sudah loaded ketika tab ini dibuka,
+    // listener tidak akan firing ulang — jadi kita trigger manual di sini.
+    final periodState = context.read<AcademicPeriodBloc>().state;
+    if (periodState is AcademicPeriodLoaded &&
+        periodState.currentAcademicPeriod.isNotEmpty) {
+      context.read<AssignmentBloc>().add(
+            GetActiveAssignments(period: periodState.currentAcademicPeriod));
+    }
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -61,14 +74,14 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
     } else if (filter == 'Belum') {
       return _allAssignments
           .where((item) =>
-              item.totalSubmited == 0 && item.dueDate.isAfter(DateTime.now()))
+              !item.sudahSubmit && item.dueDate.isAfter(DateTime.now()))
           .length;
     } else if (filter == 'Selesai') {
-      return _allAssignments.where((item) => item.totalSubmited > 0).length;
+      return _allAssignments.where((item) => item.sudahSubmit).length;
     } else if (filter == 'Terlambat') {
       return _allAssignments
           .where((item) =>
-              item.totalSubmited == 0 && item.dueDate.isBefore(DateTime.now()))
+              !item.sudahSubmit && item.dueDate.isBefore(DateTime.now()))
           .length;
     }
     return 0;
@@ -81,7 +94,7 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
         final matkul = item.subjectName.toLowerCase();
         final judul = item.assignmentTitle.toLowerCase();
 
-        final isSelesai = item.totalSubmited > 0;
+        final isSelesai = item.sudahSubmit;
         final isTerlambat = !isSelesai && item.dueDate.isBefore(DateTime.now());
         final isBelum = !isSelesai && item.dueDate.isAfter(DateTime.now());
 
@@ -350,7 +363,7 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
 
   Widget _buildTugasCard(Assignment data) {
     int status;
-    if (data.totalSubmited > 0) {
+    if (data.sudahSubmit) {
       status = STATUS_SELESAI;
     } else if (data.dueDate.isBefore(DateTime.now())) {
       status = STATUS_TERLAMBAT;
@@ -503,24 +516,24 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
 
             // Baris Aksi Bawah
             if (status == STATUS_SELESAI)
-              // Tampilan File yg sudah Uploaded
+              // Tampilan File yg sudah disubmit
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: const Color(0xFFF0FDF4),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: const Color(0xFFBBF7D0)),
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDCFCE7), // Sangat light green
+                        color: const Color(0xFFDCFCE7),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.insert_drive_file,
+                      child: const Icon(Icons.task_alt,
                           color: Color(0xFF10B981), size: 18),
                     ),
                     const Gap(12),
@@ -528,20 +541,16 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            data.fileName.isNotEmpty
-                                ? data.fileName
-                                : "File Submission",
-                            style: const TextStyle(
-                              color: Color(0xFF0F172A),
+                          const Text(
+                            "Tugas berhasil dikumpulkan",
+                            style: TextStyle(
+                              color: Color(0xFF059669),
                               fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            "Uploaded",
+                            "Ketuk \"Unggah Tugas\" untuk mengubah submission",
                             style: TextStyle(
                               color: Colors.grey.shade500,
                               fontSize: 11,
@@ -550,88 +559,96 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.file_download_outlined,
-                          color: Color(0xFF64748B)),
-                      onPressed: () {
-                        // Karena Endpoint /students/home/assignments/active
-                        // tidak mengembalikan `assignment_link` dan `assignment_file`
-                        // dari file yang disubmit mahasiswa (berbeda dengan /detail),
-                        // maka memanggil aksi download memerlukan ID submit.
-                        // Untuk saat ini kita memanggil check detail assignment.
-                        BlocProvider.of<AssignmentBloc>(context).add(
-                            GetStudentSubmitedAssignment(
-                                assignmentId: data.assignmentId));
-                        // TODO: Download actual logic should rely on state from GetStudentSubmitedAssignment.
-                      },
-                      constraints: const BoxConstraints(),
-                      padding: EdgeInsets.zero,
-                    ),
                   ],
                 ),
-              )
-            else
-              // Tampilan Tombol Upload
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.vertical(top: Radius.circular(20)),
-                      ),
-                      builder: (BuildContext context) {
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            bottom: MediaQuery.of(context).viewInsets.bottom,
-                          ),
-                          child: Wrap(
-                            children: [
-                              Column(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 5,
-                                    margin: const EdgeInsets.only(
-                                        top: 12, bottom: 8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade300,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  UploadAssignmentBody(
-                                    screenWidth:
-                                        MediaQuery.of(context).size.width,
-                                    assignmentId: data.assignmentId,
-                                  ),
-                                  const Gap(24),
-                                ],
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  },
-                  icon: const Icon(Icons.attach_file, size: 18),
-                  label: const Text(
-                    "Unggah Tugas",
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF334155),
-                    side: BorderSide(color: Colors.grey.shade300, width: 1),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+              ),
+              
+            const Gap(16),
+            // Tombol Tombol Upload / Lihat Submission (Selalu Tampil)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  // Simpan referensi sebelum async gap
+                  final bloc = context.read<AssignmentBloc>();
+                  final periodState =
+                      context.read<AcademicPeriodBloc>().state;
+                  final period = periodState is AcademicPeriodLoaded
+                      ? periodState.currentAcademicPeriod
+                      : '';
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.white,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(20)),
                     ),
+                    builder: (BuildContext context) {
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: MediaQuery.of(context).viewInsets.bottom,
+                        ),
+                        child: Wrap(
+                          children: [
+                            Column(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 5,
+                                  margin: const EdgeInsets.only(
+                                      top: 12, bottom: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade300,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                UploadAssignmentBody(
+                                  screenWidth:
+                                      MediaQuery.of(context).size.width,
+                                  assignmentId: data.assignmentId,
+                                ),
+                                const Gap(24),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ).then((_) {
+                    // Gunakan referensi yang sudah disimpan sebelum async
+                    if (period.isNotEmpty) {
+                      bloc.add(GetActiveAssignments(period: period));
+                    }
+                  });
+                },
+                icon: Icon(
+                  data.sudahSubmit ? Icons.edit_document : Icons.attach_file,
+                  size: 18,
+                  color: data.sudahSubmit
+                      ? const Color(0xFF64748B)
+                      : const Color(0xFF334155),
+                ),
+                label: Text(
+                  data.sudahSubmit ? "Lihat / Ubah Tugas" : "Unggah Tugas",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: data.sudahSubmit
+                        ? const Color(0xFF64748B)
+                        : const Color(0xFF334155),
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF334155),
+                  side: BorderSide(color: Colors.grey.shade300, width: 1),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
               ),
+            ),
           ],
         ),
       ),
