@@ -46,7 +46,6 @@ class _LecturerMaterialsBodyState extends State<LecturerMaterialsBody> {
           academicPeriod: widget.subject.academicPeriodId,
           subjectId: widget.subject.subjectId,
           subjectClass: widget.subject.subjectClass,
-          masterActivityId: widget.subject.activityMasterId,
         ));
       });
       await widget.userRepository.setWidgetState('lecturer_material', true);
@@ -111,7 +110,6 @@ class _LecturerMaterialsBodyState extends State<LecturerMaterialsBody> {
                     academicPeriod: widget.subject.academicPeriodId,
                     subjectId: widget.subject.subjectId,
                     subjectClass: widget.subject.subjectClass,
-                    masterActivityId: widget.subject.activityMasterId,
                   ));
                 });
               }),

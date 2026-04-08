@@ -19,13 +19,6 @@ class StudentTugasPage extends StatefulWidget {
 }
 
 class _StudentTugasPageState extends State<StudentTugasPage> {
-  // Enum untuk status tugas (Sesuai mockup)
-  // ignore: constant_identifier_names
-  static const int STATUS_BELUM = 0;
-  // ignore: constant_identifier_names
-  static const int STATUS_TERLAMBAT = 1;
-  // ignore: constant_identifier_names
-  static const int STATUS_SELESAI = 2;
 
   // Data dinamis dari API
   List<Assignment> _allAssignments = [];
@@ -362,30 +355,30 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
   }
 
   Widget _buildTugasCard(Assignment data) {
-    int status;
-    if (data.sudahSubmit) {
-      status = STATUS_SELESAI;
-    } else if (data.dueDate.isBefore(DateTime.now())) {
-      status = STATUS_TERLAMBAT;
-    } else {
-      status = STATUS_BELUM;
-    }
+    final bool sudahSubmit = data.sudahSubmit;
+    final bool isLate = sudahSubmit
+        ? (data.submissionDate != null &&
+            data.dueDate.isBefore(data.submissionDate!))
+        : data.dueDate.isBefore(DateTime.now());
+    
+    final bool isExpired = DateTime.now().isAfter(data.endTime ?? data.dueDate);
+
     Color badgeBgColor;
     Color badgeTextColor;
     String badgeText;
 
-    if (status == STATUS_BELUM) {
-      badgeBgColor = const Color(0xFFFFF7ED); // Sangat light orange
-      badgeTextColor = const Color(0xFFF97316); // Orange tegas
-      badgeText = "BELUM MENGUMPULKAN";
-    } else if (status == STATUS_TERLAMBAT) {
-      badgeBgColor = const Color(0xFFFEF2F2); // Sangat light red
-      badgeTextColor = const Color(0xFFEF4444); // Merah tegas
+    if (sudahSubmit) {
+      badgeBgColor = const Color(0xFFECFDF5);
+      badgeTextColor = const Color(0xFF10B981);
+      badgeText = "SUDAH DIKUMPULKAN";
+    } else if (isLate) {
+      badgeBgColor = const Color(0xFFFEF2F2);
+      badgeTextColor = const Color(0xFFEF4444);
       badgeText = "TERLAMBAT";
     } else {
-      badgeBgColor = const Color(0xFFECFDF5); // Sangat light green
-      badgeTextColor = const Color(0xFF10B981); // Hijau cerah
-      badgeText = "SUDAH DIKUMPULKAN";
+      badgeBgColor = const Color(0xFFFFF7ED);
+      badgeTextColor = const Color(0xFFF97316);
+      badgeText = "BELUM MENGUMPULKAN";
     }
 
     return Container(
@@ -393,6 +386,9 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: sudahSubmit ? const Color(0xFFBBF7D0) : Colors.grey.shade200,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -406,252 +402,353 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Baris Atas: Minggu saja
+            // Header: judul + minggu + badge
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.subjectName,
+                        style: const TextStyle(
+                          color: Color(0xFF3B82F6),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const Gap(4),
+                      Text(
+                        data.assignmentTitle,
+                        style: const TextStyle(
+                          color: Color(0xFF0F172A),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      "Minggu ${data.weekId}",
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Gap(4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: badgeBgColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        badgeText,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: badgeTextColor,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const Gap(10),
+
+            // Deadline / Kelas
+            Row(
+              children: [
+                Icon(
+                  isLate && !sudahSubmit
+                      ? Icons.warning_amber_rounded
+                      : Icons.access_time,
+                  size: 13,
+                  color: isLate && !sudahSubmit
+                      ? const Color(0xFFEF4444)
+                      : Colors.grey.shade500,
+                ),
+                const Gap(4),
                 Text(
-                  "Minggu ${data.weekId}",
+                  "Tenggat: ${DateFormat("d MMM y, HH:mm").format(data.dueDate)}",
                   style: TextStyle(
-                    color: Colors.grey.shade500,
                     fontSize: 12,
+                    color: isLate && !sudahSubmit
+                        ? const Color(0xFFEF4444)
+                        : Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Gap(12),
+                Icon(Icons.bookmark_border,
+                    size: 13, color: Colors.grey.shade500),
+                const Gap(4),
+                Text(
+                  "Kelas: ${data.subjectClass}",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
-            const Gap(8),
-
-            // Konten Tengah: Mata Kuliah & Judul Tugas
-            Text(
-              data.subjectName,
-              style: const TextStyle(
-                color: Color(0xFF3B82F6), // Biru Cyan seperti desain
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
+            if (data.endTime != null && data.endTime!.isAfter(data.dueDate)) ...[
+              const Gap(4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 13,
+                    color: isExpired && !sudahSubmit
+                        ? const Color(0xFFEF4444)
+                        : Colors.grey.shade500,
+                  ),
+                  const Gap(4),
+                  Text(
+                    "Batas Terlambat: ${DateFormat("d MMM y, HH:mm").format(data.endTime!)}",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isExpired && !sudahSubmit
+                          ? const Color(0xFFEF4444)
+                          : Colors.grey.shade500,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const Gap(4),
-            Text(
-              data.assignmentTitle,
-              style: const TextStyle(
-                color: Color(0xFF0F172A),
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                height: 1.3,
-              ),
-            ),
+            ],
             const Gap(12),
 
-            // Baris Detail info
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                        status == STATUS_SELESAI
-                            ? Icons.check_circle_outline
-                            : Icons.access_time,
-                        size: 14,
-                        color: status == STATUS_SELESAI
-                            ? const Color(0xFF10B981)
-                            : Colors.grey.shade600),
-                    const Gap(4),
-                    Text(
-                      status == STATUS_SELESAI
-                          ? "Dikumpulkan: Selesai"
-                          : "Deadline: ${DateFormat("d MMM, HH:mm").format(data.dueDate)}",
-                      style: TextStyle(
-                        color: status == STATUS_SELESAI
-                            ? const Color(0xFF10B981)
-                            : Colors.grey.shade600,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.bookmark_border,
-                        size: 14, color: Colors.grey.shade600),
-                    const Gap(4),
-                    Text(
-                      "Kelas: ${data.subjectClass}",
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const Gap(12),
-
-            // Badge Status ditempatkan di atas aksi (Upload file)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: badgeBgColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                badgeText,
-                style: TextStyle(
-                  color: badgeTextColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            const Gap(16),
-
-            // Baris Aksi Bawah
-            if (status == STATUS_SELESAI)
-              // Tampilan File yg sudah disubmit
+            // ── SECTION: Info submission (mirip assignments_body.dart) ──
+            if (sudahSubmit) ...[
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF0FDF4),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xFFBBF7D0)),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDCFCE7),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.task_alt,
-                          color: Color(0xFF10B981), size: 18),
-                    ),
-                    const Gap(12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Tugas berhasil dikumpulkan",
+                    Row(
+                      children: [
+                        const Icon(Icons.task_alt,
+                            color: Color(0xFF10B981), size: 16),
+                        const Gap(6),
+                        const Expanded(
+                          child: Text(
+                            "Tugas Sudah Dikumpulkan",
                             style: TextStyle(
+                              fontWeight: FontWeight.w700,
                               color: Color(0xFF059669),
                               fontSize: 13,
-                              fontWeight: FontWeight.w700,
                             ),
                           ),
+                        ),
+                        if (isLate)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              "Terlambat",
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Color(0xFFEF4444),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    // Tanggal dikumpulkan
+                    if (data.submissionDate != null) ...[
+                      const Gap(6),
+                      Row(
+                        children: [
+                          Icon(Icons.calendar_today_outlined,
+                              size: 12, color: Colors.grey.shade500),
+                          const Gap(4),
                           Text(
-                            "Ketuk \"Unggah Tugas\" untuk mengubah submission",
+                            "Dikumpulkan: ${DateFormat("d MMM y, HH:mm").format(data.submissionDate!.toLocal())}",
                             style: TextStyle(
-                              color: Colors.grey.shade500,
-                              fontSize: 11,
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              
-            const Gap(16),
-            // Tombol Tombol Upload / Lihat Submission (Selalu Tampil)
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  // Simpan referensi sebelum async gap
-                  final bloc = context.read<AssignmentBloc>();
-                  final periodState =
-                      context.read<AcademicPeriodBloc>().state;
-                  final period = periodState is AcademicPeriodLoaded
-                      ? periodState.currentAcademicPeriod
-                      : '';
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.white,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(20)),
-                    ),
-                    builder: (BuildContext context) {
-                      return Padding(
-                        padding: EdgeInsets.only(
-                          bottom: MediaQuery.of(context).viewInsets.bottom,
+                    ],
+                    // File submission + tombol download
+                    if (data.submissionLink.isNotEmpty || data.submissionFile.isNotEmpty) ...[
+                      const Gap(8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
                         ),
-                        child: Wrap(
+                        child: Row(
                           children: [
-                            Column(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 5,
-                                  margin: const EdgeInsets.only(
-                                      top: 12, bottom: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade300,
-                                    borderRadius: BorderRadius.circular(10),
+                            const Icon(Icons.insert_drive_file_outlined,
+                                size: 16, color: Color(0xFF10B981)),
+                            const Gap(8),
+                            Expanded(
+                              child: Text(
+                                data.submissionFile.isNotEmpty
+                                    ? data.submissionFile
+                                    : data.submissionLink.split('/').last,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF0F172A),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.download_outlined,
+                                  size: 18, color: Color(0xFF10B981)),
+                              onPressed: () {
+                                BlocProvider.of<AssignmentBloc>(context).add(
+                                  DownloadStudentAssignmentSubmission(
+                                    fileLink: data.submissionLink.isNotEmpty
+                                        ? data.submissionLink
+                                        : data.submissionFile,
+                                    fileName: data.submissionFile.isNotEmpty
+                                        ? data.submissionFile
+                                        : data.submissionLink.split('/').last,
                                   ),
-                                ),
-                                UploadAssignmentBody(
-                                  screenWidth:
-                                      MediaQuery.of(context).size.width,
-                                  assignmentId: data.assignmentId,
-                                ),
-                                const Gap(24),
-                              ],
+                                );
+                              },
+                              constraints: const BoxConstraints(),
+                              padding: EdgeInsets.zero,
                             ),
                           ],
                         ),
-                      );
-                    },
-                  ).then((_) {
-                    // Gunakan referensi yang sudah disimpan sebelum async
-                    if (period.isNotEmpty) {
-                      bloc.add(GetActiveAssignments(period: period));
-                    }
-                  });
-                },
-                icon: Icon(
-                  data.sudahSubmit ? Icons.edit_document : Icons.attach_file,
-                  size: 18,
-                  color: data.sudahSubmit
-                      ? const Color(0xFF64748B)
-                      : const Color(0xFF334155),
+                      ),
+                    ],
+                  ],
                 ),
-                label: Text(
-                  data.sudahSubmit ? "Lihat / Ubah Tugas" : "Unggah Tugas",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: data.sudahSubmit
-                        ? const Color(0xFF64748B)
-                        : const Color(0xFF334155),
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF334155),
-                  side: BorderSide(color: Colors.grey.shade300, width: 1),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+              ),
+              const Gap(12),
+              // Tombol ubah submission
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: isExpired ? null : () => _openUploadSheet(context, data),
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: const Text("Ubah Submission",
+                      style: TextStyle(fontSize: 13)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF64748B),
+                    disabledForegroundColor: Colors.grey.shade400,
+                    side: BorderSide(color: Colors.grey.shade300),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
-            ),
+            ] else ...[
+              // Tombol upload (belum submit)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: isExpired ? null : () => _openUploadSheet(context, data),
+                  icon: const Icon(Icons.attach_file, size: 16),
+                  label: const Text("Kumpulkan Tugas",
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E5AD6),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    disabledForegroundColor: Colors.grey.shade500,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  void _openUploadSheet(BuildContext ctx, Assignment data) {
+    final bloc = ctx.read<AssignmentBloc>();
+    final periodState = ctx.read<AcademicPeriodBloc>().state;
+    final period = periodState is AcademicPeriodLoaded
+        ? periodState.currentAcademicPeriod
+        : '';
+
+    showModalBottomSheet(
+      context: ctx,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext sheetCtx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetCtx).viewInsets.bottom,
+          ),
+          child: Wrap(
+            children: [
+              Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 5,
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  BlocProvider.value(
+                    value: bloc,
+                    child: UploadAssignmentBody(
+                      screenWidth: MediaQuery.of(sheetCtx).size.width,
+                      assignmentId: data.assignmentId,
+                      assignment: data,
+                    ),
+                  ),
+                  const Gap(24),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    ).then((_) {
+      if (period.isNotEmpty) {
+        bloc.add(GetActiveAssignments(period: period));
+      }
+    });
   }
 }

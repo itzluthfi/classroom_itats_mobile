@@ -8,6 +8,7 @@ import 'package:classroom_itats_mobile/user/repositories/assignment_repository.d
 import 'package:classroom_itats_mobile/user/repositories/subject_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:classroom_itats_mobile/services/notification_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 part 'assignment_event.dart';
 part 'assignment_state.dart';
@@ -23,7 +24,11 @@ class AssignmentBloc extends Bloc<AssignmentEvent, AssignmentState> {
       emit(AssignmentLoading());
       try {
         var assignments = await assignmentRepository
-            .getStudyAssignment(event.masterActivityId);
+            .getStudyAssignment(
+              event.academicPeriod,
+              event.subjectId,
+              event.subjectClass,
+            );
 
         emit(AssignmentLoaded(
           assignments: assignments,
@@ -102,7 +107,11 @@ class AssignmentBloc extends Bloc<AssignmentEvent, AssignmentState> {
       emit(AssignmentLoading());
       try {
         var assignmentScores = await assignmentRepository
-            .getStudentAssignmentScore(event.masterActivityId);
+            .getStudentAssignmentScore(
+              event.academicPeriod,
+              event.subjectId,
+              event.subjectClass,
+            );
 
         emit(AssignmentLoaded(
           assignments: List.empty(),
@@ -121,50 +130,53 @@ class AssignmentBloc extends Bloc<AssignmentEvent, AssignmentState> {
       (AssignmentEvent event, Emitter<AssignmentState> emit) async {
         if (event is DownloadStudentAssignmentSubmission) {
           emit(AssignmentFileDownloadLoading());
-          try {
-            var code = await assignmentRepository.downloadAssignmentFile(
-                event.fileLink, event.fileName);
+          final savedPath = await assignmentRepository.downloadAssignmentFile(
+              event.fileLink, event.fileName);
 
-            if (code == 200) {
+          // Notif dalam try-catch terpisah — JANGAN biarkan failure notif
+          // membuat state menjadi Failed padahal file sudah tersimpan
+          try {
+            if (savedPath != null) {
               await NotificationService().showNotification(
-                  title: "Success",
-                  body: "Sukses mendownload file submission anda");
-              emit(AssignmentFileDownloadSuccess());
+                  title: "Unduhan Berhasil",
+                  body: "File tersimpan di folder Download perangkat Anda.");
             } else {
               await NotificationService().showNotification(
-                  title: "Failed",
-                  body:
-                      "Mohon maaf, sistem gagal mendownload file submission anda");
+                  title: "Unduhan Gagal",
+                  body: "Gagal mengunduh file. Cek koneksi internet.");
             }
-          } catch (e) {
-            await NotificationService().showNotification(
-                title: "Failed",
-                body:
-                    "Mohon maaf, sistem gagal mendownload file submission anda");
+          } catch (_) {/* abaikan error notifikasi */}
+
+          // Emit state berdasarkan hasil download, BUKAN notifikasi
+          if (savedPath != null) {
+            emit(AssignmentFileDownloadSuccess());
+          } else {
             emit(AssignmentFileDownloadFailed());
           }
+
         } else if (event is DownloadAssignment) {
           emit(AssignmentFileDownloadLoading());
-          try {
-            var code = await assignmentRepository.downloadAssignmentFile(
-                event.fileLink, event.fileName);
+          final savedPath = await assignmentRepository.downloadAssignmentFile(
+              event.fileLink, event.fileName);
 
-            if (code == 200) {
+          try {
+            if (savedPath != null) {
               await NotificationService().showNotification(
-                  title: "Success", body: "Sukses mendownload file tugas");
-              emit(AssignmentFileDownloadSuccess());
+                  title: "Unduhan Berhasil",
+                  body: "File tugas tersimpan di folder Download perangkat Anda.");
             } else {
               await NotificationService().showNotification(
-                  title: "Failed",
-                  body: "Mohon maaf, sistem gagal mendownload file tugas");
-              emit(AssignmentFileDownloadFailed());
+                  title: "Unduhan Gagal",
+                  body: "Gagal mengunduh file tugas. Cek koneksi internet.");
             }
-          } catch (e) {
-            await NotificationService().showNotification(
-                title: "Failed",
-                body: "Mohon maaf, sistem gagal mendownload file tugas");
+          } catch (_) {/* abaikan error notifikasi */}
+
+          if (savedPath != null) {
+            emit(AssignmentFileDownloadSuccess());
+          } else {
             emit(AssignmentFileDownloadFailed());
           }
+
         } else if (event is CreateAssignment) {
           emit(CreateAssignmentLoading());
           try {

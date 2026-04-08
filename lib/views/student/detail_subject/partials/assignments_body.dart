@@ -61,6 +61,30 @@ class _StudentAssignmentsBodyState extends State<StudentAssignmentsBody> {
                     child: UploadAssignmentBody(
                       screenWidth: screenWidth,
                       assignmentId: assignment.assignmentId,
+                      assignment: Assignment(
+                        assignmentId: assignment.assignmentId,
+                        activityMasterId: assignment.activityMasterId,
+                        weekId: assignment.weekId,
+                        assignmentTitle: assignment.assignmentTitle,
+                        description: assignment.description,
+                        dueDate: assignment.dueDate,
+                        endTime: assignment.endTime,
+                        jNilId: assignment.jNilId,
+                        createdAt: assignment.createdAt,
+                        updatedAt: assignment.updatedAt,
+                        fileLink: assignment.fileLink,
+                        fileName: assignment.fileName,
+                        isShow: true,
+                        realPrercentage: 0.0,
+                        subjectClass: '',
+                        subjectName: '',
+                        jNilDesc: '',
+                        totalSubmited: 0,
+                        sudahSubmit: assignment.assignmentSubmissionId != 0,
+                        submissionFile: assignment.assignmentFile,
+                        submissionLink: assignment.assignmentLink,
+                        submissionDate: assignment.createdAt,
+                      ),
                     ),
                   ),
                   const Gap(24),
@@ -113,9 +137,13 @@ class _StudentAssignmentsBodyState extends State<StudentAssignmentsBody> {
             itemBuilder: (ctx, index) {
               final a = assignments[index];
               final sudahSubmit = a.assignmentSubmissionId != 0;
+              final endTime = a.endTime?.toLocal() ?? a.dueDate.toLocal();
+              
               final isLate = sudahSubmit
                   ? a.dueDate.isBefore(a.createdAt)
                   : a.dueDate.isBefore(DateTime.now());
+
+              final isExpired = DateTime.now().isAfter(endTime);
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -210,6 +238,32 @@ class _StudentAssignmentsBodyState extends State<StudentAssignmentsBody> {
                           ),
                         ],
                       ),
+                      
+                      if (a.endTime != null && a.endTime!.isAfter(a.dueDate)) ...[
+                        const Gap(4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              size: 13,
+                              color: isExpired && !sudahSubmit
+                                  ? const Color(0xFFEF4444)
+                                  : Colors.grey.shade500,
+                            ),
+                            const Gap(4),
+                            Text(
+                              "Batas Terlambat: ${DateFormat("EEEE, d MMM y HH:mm", "id_ID").format(a.endTime!)}",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isExpired && !sudahSubmit
+                                    ? const Color(0xFFEF4444)
+                                    : Colors.grey.shade500,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
 
                       // Deskripsi
                       if (a.description.isNotEmpty) ...[
@@ -389,14 +443,16 @@ class _StudentAssignmentsBodyState extends State<StudentAssignmentsBody> {
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
-                            onPressed: () =>
-                                _openUploadSheet(context, a, screenWidth),
+                            onPressed: isExpired
+                                ? null
+                                : () => _openUploadSheet(context, a, screenWidth),
                             icon:
                                 const Icon(Icons.edit_outlined, size: 16),
                             label: const Text("Ubah Submission",
                                 style: TextStyle(fontSize: 13)),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF64748B),
+                              disabledForegroundColor: Colors.grey.shade400,
                               side:
                                   BorderSide(color: Colors.grey.shade300),
                               padding: const EdgeInsets.symmetric(
@@ -411,14 +467,17 @@ class _StudentAssignmentsBodyState extends State<StudentAssignmentsBody> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed: () =>
-                                _openUploadSheet(context, a, screenWidth),
+                            onPressed: isExpired
+                                ? null
+                                : () => _openUploadSheet(context, a, screenWidth),
                             icon: const Icon(Icons.attach_file, size: 16),
                             label: const Text("Kumpulkan Tugas",
                                 style: TextStyle(fontWeight: FontWeight.bold)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1E5AD6),
                               foregroundColor: Colors.white,
+                              disabledBackgroundColor: Colors.grey.shade300,
+                              disabledForegroundColor: Colors.grey.shade500,
                               elevation: 0,
                               padding:
                                   const EdgeInsets.symmetric(vertical: 12),

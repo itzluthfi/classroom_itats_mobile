@@ -18,7 +18,11 @@ class Assignment {
   String subjectName;
   String jNilDesc;
   int totalSubmited;
-  bool sudahSubmit; // field dari backend untuk cek apakah mahasiswa sudah submit
+  bool sudahSubmit;
+  // Field baru: data file/link yang dikumpulkan mahasiswa
+  String submissionFile;
+  String submissionLink;
+  DateTime? submissionDate;
 
   Assignment({
     required this.assignmentId,
@@ -41,10 +45,20 @@ class Assignment {
     required this.jNilDesc,
     required this.totalSubmited,
     this.sudahSubmit = false,
+    this.submissionFile = "",
+    this.submissionLink = "",
+    this.submissionDate,
   });
 
   factory Assignment.fromJson(Map<String, dynamic> json) {
     try {
+      // Tangani submission_date: jika null atau epoch awal (belum submit), set null
+      DateTime? parsedSubmissionDate;
+      final rawDate = json["submission_date"];
+      if (rawDate != null && rawDate != "0001-01-01T00:00:00Z") {
+        parsedSubmissionDate = DateTime.tryParse(rawDate);
+      }
+
       return Assignment(
         assignmentId: json["assignment_id"],
         activityMasterId: json["activity_master_id"],
@@ -71,6 +85,9 @@ class Assignment {
         jNilDesc: json["j_nil_desc"] ?? "",
         totalSubmited: json["total_submited"] ?? 0,
         sudahSubmit: json["sudah_submit"] ?? false,
+        submissionFile: json["submission_file"] ?? "",
+        submissionLink: json["submission_link"] ?? "",
+        submissionDate: parsedSubmissionDate,
       );
     } catch (e) {
       print("ERROR parsing Assignment: $e \n JSON: $json");
@@ -154,6 +171,7 @@ class StudentAssignmentJoin {
   String assignmentTitle;
   String description;
   DateTime dueDate;
+  DateTime? endTime;
   String jNilId;
   String fileLink;
   String fileName;
@@ -173,6 +191,7 @@ class StudentAssignmentJoin {
     required this.assignmentTitle,
     required this.description,
     required this.dueDate,
+    this.endTime,
     required this.jNilId,
     required this.fileLink,
     required this.fileName,
@@ -193,6 +212,7 @@ class StudentAssignmentJoin {
         assignmentTitle: json["assignment_title"],
         description: json["description"],
         dueDate: DateTime.parse(json["due_date"]),
+        endTime: json["end_time"] != null ? DateTime.tryParse(json["end_time"]) : null,
         jNilId: json["j_nil_id"],
         fileLink: json["file_link"],
         fileName: json["file_name"],
