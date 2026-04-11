@@ -59,7 +59,7 @@ class _LecturerDetailCollegeReportState
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
-                    )
+                    ),
                   ],
                 ),
                 const Gap(20),
@@ -135,6 +135,27 @@ List<Widget> _getSubject(context, state, SubjectReport subject,
       ),
     ];
   } else if (state is LectureLoaded) {
+    if (state.lectureReports.isEmpty) {
+      return [
+        SizedBox(
+          width: screenWidth,
+          height: screenHeight * 0.6,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: const [
+              Icon(Icons.snippet_folder_rounded, size: 80, color: Colors.grey),
+              Gap(16),
+              Text(
+                "Mohon maaf, belum ada laporan kuliah untuk kelas ini.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            ],
+          ),
+        )
+      ];
+    }
     return [
       Column(
         children: _subject(context, state.lectureReports, subject, screenWidth),
@@ -144,11 +165,18 @@ List<Widget> _getSubject(context, state, SubjectReport subject,
     return [
       SizedBox(
         width: screenWidth,
-        height: screenHeight * 0.9,
-        child: const Column(
-          children: [
-            Gap(20),
-            Text("Mohon maaf, tidak ada data yang dapat ditampilkan"),
+        height: screenHeight * 0.6,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: const [
+            Icon(Icons.assignment_late_rounded, size: 80, color: Colors.grey),
+            Gap(16),
+            Text(
+              "Mohon maaf, tidak ada data rincian pelaporan yang dapat ditampilkan",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
           ],
         ),
       )

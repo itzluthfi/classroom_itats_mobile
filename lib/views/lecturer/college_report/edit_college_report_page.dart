@@ -24,8 +24,7 @@ class LecturerEditCollegeReportPage extends StatelessWidget {
             BlocProvider.of<StudyMaterialBloc>(context)
                 .add(ClearStateStudyMaterial());
 
-            Navigator.pushNamed(context, "/lecturer/college_report/detail",
-                arguments: subject);
+            Navigator.pop(context);
           },
         ),
         title: Image.asset(
@@ -37,24 +36,7 @@ class LecturerEditCollegeReportPage extends StatelessWidget {
         scrolledUnderElevation: scrolledUnderElevation,
         shadowColor: null,
         actions: [
-          IconButton(
-            onPressed: () {
-              BlocProvider.of<StudyMaterialBloc>(context)
-                  .add(ClearStateStudyMaterial());
 
-              Navigator.pushNamed(context, "/lecturer/subject_score");
-            },
-            icon: const Icon(Icons.book_sharp),
-          ),
-          IconButton(
-            onPressed: () {
-              BlocProvider.of<StudyMaterialBloc>(context)
-                  .add(ClearStateStudyMaterial());
-
-              Navigator.pushNamed(context, "/lecturer/assignment");
-            },
-            icon: const Icon(Icons.folder_open_rounded),
-          ),
           IconButton(
             onPressed: () {
               BlocProvider.of<AuthBloc>(context).add(LoggedOut());

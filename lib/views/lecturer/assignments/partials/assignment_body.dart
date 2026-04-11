@@ -77,31 +77,36 @@ class _LecturerAssignmentBodyState extends State<LecturerAssignmentBody> {
             return Placeholder(
               color: Colors.transparent,
               child: RefreshIndicator(
-                child: ListView(
-                  controller: ScrollController(),
-                  scrollDirection: Axis.vertical,
-                  children: const [
-                    Gap(20),
-                    Column(
-                      children: [
-                        Text(
-                          "Tugas Dibuat",
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                child: CustomScrollView(
+                  slivers: [
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Column(
+                        children: [
+                          const Gap(20),
+                          const Text(
+                            "Tugas Dibuat",
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        )
-                      ],
-                    ),
-                    Gap(20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Center(
-                          child: Text(
-                              "Mohon maaf, tidak ada data yang dapat ditampilkan"),
-                        )
-                      ],
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                Icon(Icons.snippet_folder_rounded, size: 80, color: Colors.grey),
+                                Gap(16),
+                                Text(
+                                  "Mohon maaf, tidak ada tugas yang dapat ditampilkan",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -169,32 +174,33 @@ class _LecturerAssignmentBodyState extends State<LecturerAssignmentBody> {
           return Placeholder(
             color: Colors.transparent,
             child: RefreshIndicator(
-              child: const CustomScrollView(
+              child: CustomScrollView(
                 slivers: [
                   SliverFillRemaining(
+                    hasScrollBody: false,
                     child: Column(
                       children: [
-                        Gap(20),
-                        Column(
-                          children: [
-                            Text(
-                              "Tugas Dibuat",
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            )
-                          ],
+                        const Gap(20),
+                        const Text(
+                          "Tugas Dibuat",
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        Gap(20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Center(
-                              child: Text(
-                                  "Mohon maaf, tidak ada data yang dapat ditampilkan"),
-                            )
-                          ],
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.error_outline_rounded, size: 80, color: Colors.grey),
+                              Gap(16),
+                              Text(
+                                "Gagal memuat tugas, silakan coba lagi.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 16, color: Colors.grey),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -240,104 +246,150 @@ List<Widget> _assignment(List<Assignment> assignments, double screenWidth) {
 
   for (var assignment in assignments) {
     scores.add(
-      Row(
-        children: [
-          SizedBox(
-            width: screenWidth,
-            child: Container(
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.all(
-                  Radius.circular(10),
-                ),
-              ),
-              width: screenWidth,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+      Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        width: screenWidth,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.grey.shade200,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Card(
-                    surfaceTintColor: Colors.white,
-                    elevation: 0,
-                    color: assignment.jNilDesc == 'UTS' ||
-                            assignment.jNilDesc == 'UAS'
-                        ? Colors.amber
-                        : Colors.lightBlue,
-                    margin: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: const BorderRadius.all(
-                        Radius.circular(10),
-                      ),
-                      side: BorderSide(
-                          color: assignment.jNilDesc == 'UTS' ||
-                                  assignment.jNilDesc == 'UAS'
-                              ? Colors.amber
-                              : Colors.lightBlue),
+                   Expanded(
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         Text(
+                           assignment.subjectName,
+                           style: const TextStyle(
+                             color: Color(0xFF3B82F6),
+                             fontSize: 12,
+                             fontWeight: FontWeight.w700,
+                             letterSpacing: 0.5,
+                           ),
+                           maxLines: 1,
+                           overflow: TextOverflow.ellipsis,
+                         ),
+                         const Gap(4),
+                         Text(
+                           assignment.assignmentTitle,
+                           style: const TextStyle(
+                             color: Color(0xFF0F172A),
+                             fontSize: 16,
+                             fontWeight: FontWeight.w800,
+                             height: 1.3,
+                           ),
+                           maxLines: 2,
+                           overflow: TextOverflow.ellipsis,
+                         ),
+                       ],
+                     ),
+                   ),
+                   const Gap(8),
+                   Column(
+                     crossAxisAlignment: CrossAxisAlignment.end,
+                     children: [
+                       Text(
+                         "Minggu ${assignment.weekId}",
+                         style: TextStyle(
+                           color: Colors.grey.shade500,
+                           fontSize: 12,
+                           fontWeight: FontWeight.w500,
+                         ),
+                       ),
+                       const Gap(4),
+                       Container(
+                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                         decoration: BoxDecoration(
+                           color: assignment.jNilDesc == 'UTS' || assignment.jNilDesc == 'UAS' ? const Color(0xFFFEF3C7) : const Color(0xFFE0F2FE),
+                           borderRadius: BorderRadius.circular(8),
+                         ),
+                         child: Text(
+                           assignment.jNilDesc,
+                           style: TextStyle(
+                             fontSize: 10,
+                             fontWeight: FontWeight.w800,
+                             color: assignment.jNilDesc == 'UTS' || assignment.jNilDesc == 'UAS' ? const Color(0xFFD97706) : const Color(0xFF0284C7),
+                             letterSpacing: 0.5,
+                           ),
+                         ),
+                       ),
+                     ]
+                   ),
+                ]
+              ),
+              const Gap(12),
+              Row(
+                children: [
+                  Icon(Icons.access_time, size: 13, color: Colors.grey.shade500),
+                  const Gap(4),
+                  Text(
+                    "Tenggat: ${DateFormat("d MMM y, HH:mm").format(assignment.dueDate)}",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w500,
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: screenWidth * 0.85,
-                            child: Text(
-                              assignment.assignmentTitle,
-                              maxLines: 2,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const Gap(20),
-                          SizedBox(
-                            width: screenWidth * 0.85,
-                            child: Text(
-                              "${assignment.subjectName} (${assignment.subjectClass}) - Minggu Ke ${assignment.weekId}",
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                          const Gap(10),
-                          SizedBox(
-                            width: screenWidth * 0.85,
-                            child: Text(
-                              "${assignment.totalSubmited} mahasiswa telah mengumpulkan",
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                          const Gap(10),
-                          SizedBox(
-                            width: screenWidth * 0.85,
-                            child: Text(
-                              "Tenggat - ${DateFormat.yMd().add_Hm().format(assignment.dueDate)}",
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                  ),
+                  const Gap(12),
+                  Icon(Icons.bookmark_border, size: 13, color: Colors.grey.shade500),
+                  const Gap(4),
+                  Text(
+                    "Kelas: ${assignment.subjectClass}",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
-            ),
+              const Gap(12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade100),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.people_alt, color: Color(0xFF64748B), size: 16),
+                    const Gap(8),
+                    Text(
+                      "${assignment.totalSubmited} mahasiswa telah mengumpulkan",
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      )
     );
-    scores.add(const Gap(10));
   }
 
   return scores;

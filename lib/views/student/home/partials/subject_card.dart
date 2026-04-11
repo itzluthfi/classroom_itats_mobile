@@ -164,11 +164,11 @@ List<Widget> _subjectRoomRows(List<Map<String, dynamic>> subjectSchedules) {
     String timeStr = "";
     if (start != null && end != null) {
       try {
-        final fmtStart =
-            DateFormat("HH:mm").format(DateFormat().add_Hms().parse(start));
-        final fmtEnd =
-            DateFormat("HH:mm").format(DateFormat().add_Hms().parse(end));
-        timeStr = ", $fmtStart-$fmtEnd";
+        final fmtStart = start.toString().split(":").take(2).join(":");
+        final fmtEnd = end.toString().split(":").take(2).join(":");
+        if (fmtStart.isNotEmpty && fmtEnd.isNotEmpty) {
+          timeStr = ", $fmtStart-$fmtEnd";
+        }
       } catch (e) {
         timeStr = "";
       }

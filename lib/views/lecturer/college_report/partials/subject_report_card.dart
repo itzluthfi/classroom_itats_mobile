@@ -97,7 +97,7 @@ class _LecturerSubjectReportCardState extends State<LecturerSubjectReportCard> {
                         Row(
                           children: [
                             Text(
-                              "[${widget.subject.collegeType}] ${widget.subject.roomId} ${widget.subject.day}, ${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(widget.subject.timeStart))}-${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(widget.subject.timeEnd))}",
+                              "[${widget.subject.collegeType}] ${widget.subject.roomId} ${widget.subject.day}, ${_formatTime(widget.subject.timeStart)}-${_formatTime(widget.subject.timeEnd)}",
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -168,5 +168,14 @@ class _LecturerSubjectReportCardState extends State<LecturerSubjectReportCard> {
         ),
       ),
     );
+  }
+}
+
+String _formatTime(String? time) {
+  if (time == null || time.isEmpty) return "-";
+  try {
+    return time.split(":").take(2).join(":");
+  } catch (e) {
+    return time;
   }
 }

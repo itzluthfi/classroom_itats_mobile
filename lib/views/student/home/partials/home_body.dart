@@ -176,12 +176,18 @@ List<Widget> _getSubject(SubjectState state, String currentSemesterStr,
     return [
       SizedBox(
         width: screenWidth,
-        height: screenHeight * 0.9,
-        child: const Column(
-          children: [
-            Gap(20),
-            Text("Gagal memuat data (Format Salah/Error)"),
-            Icon(Icons.error_outline, color: Colors.red),
+        height: screenHeight * 0.6,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: const [
+            Icon(Icons.error_outline_rounded, size: 80, color: Colors.redAccent),
+            Gap(16),
+            Text(
+              "Gagal memuat jadwal (Format Salah/Error)",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
           ],
         ),
       )
@@ -190,11 +196,18 @@ List<Widget> _getSubject(SubjectState state, String currentSemesterStr,
     return [
       SizedBox(
         width: screenWidth,
-        height: screenHeight * 0.9,
-        child: const Column(
-          children: [
-            Gap(20),
-            Text("Mohon maaf, tidak ada data yang dapat ditampilkan"),
+        height: screenHeight * 0.6,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: const [
+            Icon(Icons.inbox_rounded, size: 80, color: Colors.grey),
+            Gap(16),
+            Text(
+              "Mohon maaf, Anda belum memiliki jadwal mata kuliah",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
           ],
         ),
       )

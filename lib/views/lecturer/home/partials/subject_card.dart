@@ -40,14 +40,15 @@ class _LecturerSubjectCardState extends State<LecturerSubjectCard> {
             ),
           ),
           child: Card(
-            color: Colors.transparent,
+            clipBehavior: Clip.hardEdge,
+            borderOnForeground: true,
             margin: EdgeInsets.zero,
+            color: Colors.transparent,
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.all(
                 Radius.circular(10),
               ),
             ),
-            clipBehavior: Clip.hardEdge,
             child: InkWell(
               onTap: widget.onTap,
               customBorder: const RoundedRectangleBorder(
@@ -55,104 +56,91 @@ class _LecturerSubjectCardState extends State<LecturerSubjectCard> {
                   Radius.circular(10),
                 ),
               ),
-              child: Column(
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
+                  // Color Overlay to emulate the mockups (greenish/dark tint)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F3D3E).withOpacity(0.4), // Dark greenish-blue overlay
+                    ),
+                  ),
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Gap(10),
-                        Row(
-                          children: [
-                            Text(
-                              "${widget.subject.subjectCredits} ${"SKS"}",
-                              textAlign: TextAlign.start,
-                              softWrap: true,
-                              maxLines: 1,
-                              textWidthBasis: TextWidthBasis.parent,
-                              style: const TextStyle(
-                                height: 1.5,
-                                fontSize: 18,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          widget.subject.subjectName,
-                          textAlign: TextAlign.start,
-                          softWrap: true,
-                          maxLines: 1,
-                          style: const TextStyle(
-                            height: 1.5,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            overflow: TextOverflow.ellipsis,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Column(
-                              children: _subjectRoomRows(
-                                  widget.subject.subjectSchedule),
-                            )
-                          ],
-                        ),
-                        Gap(widget.subject.subjectSchedule.length <= 1
-                            ? 20
-                            : 0),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    const Column(
-                                      children: [
-                                        Icon(
-                                          Icons.person,
-                                          color: Colors.amber,
-                                        ),
-                                      ],
-                                    ),
-                                    Column(
-                                      children: [
-                                        Text(
-                                          widget.subject.totalStudent
-                                              .toString(),
-                                          textAlign: TextAlign.start,
-                                          softWrap: true,
-                                          maxLines: 1,
-                                          style: const TextStyle(
-                                            height: 1.8,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      ],
-                                    ),
-                                  ],
-                                )
-                              ],
+                            Text(
+                              "${widget.subject.subjectCredits} SKS",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                            Column(
+                            Row(
                               children: [
+                                const Icon(Icons.people_alt_rounded, color: Colors.amber, size: 16),
+                                const SizedBox(width: 4),
                                 Text(
-                                  widget.subject.subjectClass,
+                                  "${widget.subject.totalStudent} Mhs",
                                   style: const TextStyle(
-                                    height: 1.8,
-                                    fontSize: 18,
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w800,
                                     color: Colors.white,
                                   ),
                                 ),
                               ],
-                            )
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.subject.subjectName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                            height: 1.1,
+                          ),
+                        ),
+                        const Spacer(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: _subjectRoomRows(
+                                    widget.subject.subjectSchedule),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.25),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                widget.subject.subjectClass,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -170,14 +158,48 @@ class _LecturerSubjectCardState extends State<LecturerSubjectCard> {
 
 List<Widget> _subjectRoomRows(List<Map<String, dynamic>> subjectSchedules) {
   List<Widget> data = List.empty(growable: true);
+
+  if (subjectSchedules.isEmpty) {
+    data.add(const Text(
+      "Belum ada jadwal",
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: Colors.white70,
+        fontStyle: FontStyle.italic,
+      ),
+    ));
+    return data;
+  }
+
   for (var subjectSchedule in subjectSchedules) {
+    // Safety check for keys
+    final type = subjectSchedule["subject_type"] ?? "-";
+    final room = subjectSchedule["subject_room"] ?? "-";
+    final day = subjectSchedule["day"] ?? "";
+    final start = subjectSchedule["time_start"];
+    final end = subjectSchedule["time_end"];
+
+    String timeStr = "";
+    if (start != null && end != null) {
+      try {
+        final fmtStart = start.toString().split(":").take(2).join(":");
+        final fmtEnd = end.toString().split(":").take(2).join(":");
+        if (fmtStart.isNotEmpty && fmtEnd.isNotEmpty) {
+          timeStr = ", $fmtStart-$fmtEnd";
+        }
+      } catch (e) {
+        timeStr = "";
+      }
+    }
+
     data.add(
       Row(
         children: [
           Text(
-            "[${subjectSchedule["subject_type"]}] ${subjectSchedule["subject_room"]} ${subjectSchedule["day"]}, ${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subjectSchedule["time_start"]))}-${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subjectSchedule["time_end"]))}",
+            "[$type] $room $day$timeStr",
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: Colors.white,
             ),

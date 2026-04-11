@@ -50,7 +50,7 @@ class LectureBloc extends Bloc<LectureEvent, LectureState> {
               .setMaterialLecture(decodedData["material_lectures"] as List);
         }
 
-        if ((decodedData["material_lectures"] as List).isNotEmpty) {
+        if ((decodedData["responsi_lectures"] as List).isNotEmpty) {
           responsiLectures = await lectureRepository
               .setResponsiLecture(decodedData["responsi_lectures"] as List);
         }
@@ -220,14 +220,14 @@ class LectureBloc extends Bloc<LectureEvent, LectureState> {
           event.collegeType,
         );
 
-        if (status != 200) {
+        if (status == 200) {
           await NotificationService().showNotification(
-              title: "Failed",
-              body: "Mohon maaf, sistem gagal membuat pelaporan");
+              title: "Success", body: "Sukses membuat pelaporan");
           emit(LectureCreateSuccess());
         } else {
           await NotificationService().showNotification(
-              title: "Success", body: "Sukses membuat pelaporan");
+              title: "Failed",
+              body: "Mohon maaf, sistem gagal membuat pelaporan");
           emit(LectureCreateFailed());
         }
       } catch (e) {
@@ -261,14 +261,14 @@ class LectureBloc extends Bloc<LectureEvent, LectureState> {
           event.collegeType,
         );
 
-        if (status != 200) {
+        if (status == 200) {
           await NotificationService().showNotification(
-              title: "Failed",
-              body: "Mohon maaf, sistem gagal mengubah pelaporan");
+              title: "Success", body: "Sukses mengubah pelaporan");
           emit(LectureEditSuccess());
         } else {
           await NotificationService().showNotification(
-              title: "Success", body: "Sukses mengubah pelaporan");
+              title: "Failed",
+              body: "Mohon maaf, sistem gagal mengubah pelaporan");
           emit(LectureEditFailed());
         }
       } catch (e, stackTrace) {
@@ -287,15 +287,15 @@ class LectureBloc extends Bloc<LectureEvent, LectureState> {
           event.lectureId,
         );
 
-        if (status != 200) {
+        if (status == 200) {
           await NotificationService().showNotification(
-              title: "Failed",
-              body: "Mohon maaf, sistem gagal menghapus pelaporan");
+              title: "Success", body: "Sukses menghapus pelaporan");
           emit(LectureEditSuccess());
         } else {
           await NotificationService().showNotification(
-              title: "Success", body: "Sukses menghapus pelaporan");
-          emit(LectureEditFailed());
+              title: "Failed",
+              body: "Mohon maaf, sistem gagal menghapus pelaporan");
+          emit(LectureDeleteFailed());
         }
       } catch (e) {
         emit(LectureDeleteFailed());

@@ -20,11 +20,7 @@ class LecturerSubjectScorePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: BackButton(
-          onPressed: () {
-            Navigator.pushNamed(context, "/lecturer/home");
-          },
-        ),
+        automaticallyImplyLeading: false,
         title: Image.asset(
           "assets/application_images/Logo_Classroom_Rect-no_bg-rev1.png",
           height: 40,
@@ -34,18 +30,7 @@ class LecturerSubjectScorePage extends StatelessWidget {
         scrolledUnderElevation: scrolledUnderElevation,
         shadowColor: null,
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, "/lecturer/assignment");
-            },
-            icon: const Icon(Icons.folder_open_rounded),
-          ),
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, "/lecturer/college_report");
-            },
-            icon: const Icon(Icons.assignment_outlined),
-          ),
+
           IconButton(
             onPressed: () {
               BlocProvider.of<AuthBloc>(context).add(LoggedOut());

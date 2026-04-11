@@ -32,7 +32,7 @@ class _LecturerStudentScorePageState extends State<LecturerStudentScorePage> {
       appBar: AppBar(
         leading: BackButton(
           onPressed: () {
-            Navigator.pushNamed(context, "/lecturer/subject_score");
+            Navigator.pop(context);
           },
         ),
         title: Image.asset(
@@ -44,18 +44,7 @@ class _LecturerStudentScorePageState extends State<LecturerStudentScorePage> {
         scrolledUnderElevation: scrolledUnderElevation,
         shadowColor: null,
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, "/lecturer/subject_score");
-            },
-            icon: const Icon(Icons.book_sharp),
-          ),
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, "/lecturer/assignment");
-            },
-            icon: const Icon(Icons.folder_open_rounded),
-          ),
+
           IconButton(
             onPressed: () {
               BlocProvider.of<AuthBloc>(context).add(LoggedOut());

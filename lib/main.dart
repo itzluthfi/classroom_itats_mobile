@@ -48,6 +48,7 @@ import 'package:classroom_itats_mobile/user/repositories/subject_repository.dart
 import 'package:classroom_itats_mobile/user/bloc/presensi/presensi_bloc.dart';
 import 'package:classroom_itats_mobile/user/repositories/presensi_repository.dart';
 import 'package:classroom_itats_mobile/views/lecturer/home/home_page.dart';
+import 'package:classroom_itats_mobile/views/lecturer/lecturer_main_wrapper.dart';
 import 'package:classroom_itats_mobile/views/student/student_main_wrapper.dart';
 import 'package:classroom_itats_mobile/views/student/detail_subject/assigment_page.dart';
 import 'package:classroom_itats_mobile/views/student/profile/profile_page.dart';
@@ -312,7 +313,7 @@ class MyApp extends StatelessWidget {
         "/lecturer/subject": (context) => LecturerSubjectPage(
               userRepository: userRepository,
             ),
-        "/lecturer/home": (context) => LecturerHomePage(
+        "/lecturer/home": (context) => LecturerMainWrapper(
             academicPeriodRepository: academicPeriodRepository,
             majorRepository: majorRepository),
         "/lecturer/subject_score": (context) => LecturerSubjectScorePage(

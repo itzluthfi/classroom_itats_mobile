@@ -55,10 +55,14 @@ class _LecturePresenceBodyState extends State<LecturePresenceBody> {
     return BlocConsumer<LectureBloc, LectureState>(
       listener: (context, state) {},
       builder: (context, state) {
+        if (state is LectureLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
         return Placeholder(
           color: const Color.fromRGBO(0, 0, 0, 0),
           child: RefreshIndicator(
             child: Accordion(
+              maxOpenSections: 16,
               headerBorderColor: Colors.grey,
               headerBorderWidth: 1,
               headerBorderColorOpened: Colors.grey,
@@ -144,7 +148,7 @@ List<AccordionSection> accordionList(
                       Column(
                         children: [
                           Text(
-                              "[${subject.subjectSchedule[index]["subject_type"]}] ${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subject.subjectSchedule[index]["time_start"]))}-${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subject.subjectSchedule[index]["time_end"]))}",
+                              "[${subject.subjectSchedule[index]["subject_type"]}] ${_formatTime(subject.subjectSchedule[index]["time_start"])}-${_formatTime(subject.subjectSchedule[index]["time_end"])}",
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 16)),
                         ],
@@ -159,15 +163,44 @@ List<AccordionSection> accordionList(
                                   Colors.red,
                                 ),
                               ),
-                              onPressed: () {},
-                              child: const Text(
-                                "Belum Waktunya Pelaporan",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                ),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
+                              onPressed: () {
+                                SubjectReport report = SubjectReport(
+                                  subjectClass: subject.subjectClass,
+                                  subjectCredits: subject.subjectCredits,
+                                  subjectId: subject.subjectId,
+                                  majorName: subject.majorName,
+                                  majorId: subject.majorId,
+                                  academicPeriodId: subject.academicPeriodId,
+                                  lecturerId: subject.lecturerId,
+                                  subjectName: subject.subjectName,
+                                  totalStudent: subject.totalStudent,
+                                  activityMasterId: subject.activityMasterId,
+                                  lecturerName: subject.lecturerName,
+                                  day: subject.subjectSchedule[index]["day"] ?? "",
+                                  timeStart: subject.subjectSchedule[index]["time_start"] ?? "",
+                                  timeEnd: subject.subjectSchedule[index]["time_end"] ?? "",
+                                  hourId: subject.subjectSchedule[index]["hour_id"]?.toString() ?? "",
+                                  collegeType: subject.subjectSchedule[index]["subject_type"] ?? "",
+                                  roomId: subject.subjectSchedule[index]["subject_room"] ?? "",
+                                );
+                                Navigator.pushNamed(context, "/lecturer/college_report/detail", arguments: report);
+                              },
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      "Belum ada laporan pertemuan",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                    ),
+                                  ),
+                                  Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 14),
+                                ],
                               ),
                             ),
                           ),
@@ -193,7 +226,7 @@ List<AccordionSection> accordionList(
   if (lectures.isNotEmpty) {
     for (var lecture in lectures) {
       accordions[lecture[0].weekID! - 1] = AccordionSection(
-        isOpen: false,
+        isOpen: true,
         contentVerticalPadding: 10,
         leftIcon: const Icon(Icons.domain_verification_rounded,
             color: Colors.black, size: 30),
@@ -214,7 +247,7 @@ List<AccordionSection> accordionList(
                       Column(
                         children: [
                           Text(
-                              "[${subject.subjectSchedule[index]["subject_type"]}] ${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subject.subjectSchedule[index]["time_start"]))}-${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subject.subjectSchedule[index]["time_end"]))}",
+                              "[${subject.subjectSchedule[index]["subject_type"]}] ${_formatTime(subject.subjectSchedule[index]["time_start"])}-${_formatTime(subject.subjectSchedule[index]["time_end"])}",
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 16)),
                         ],
@@ -260,4 +293,13 @@ List<AccordionSection> accordionList(
   }
 
   return accordions;
+}
+
+String _formatTime(String? time) {
+  if (time == null || time.isEmpty) return "-";
+  try {
+    return time.split(":").take(2).join(":");
+  } catch (e) {
+    return time;
+  }
 }

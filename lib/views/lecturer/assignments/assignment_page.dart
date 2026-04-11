@@ -54,11 +54,7 @@ class _LecturerAssignmentPageState extends State<LecturerAssignmentPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: BackButton(
-          onPressed: () {
-            Navigator.pushNamed(context, "/lecturer/home");
-          },
-        ),
+        automaticallyImplyLeading: false,
         title: Image.asset(
           "assets/application_images/Logo_Classroom_Rect-no_bg-rev1.png",
           height: 40,
@@ -68,18 +64,7 @@ class _LecturerAssignmentPageState extends State<LecturerAssignmentPage> {
         scrolledUnderElevation: scrolledUnderElevation,
         shadowColor: null,
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, "/lecturer/subject_score");
-            },
-            icon: const Icon(Icons.book_sharp),
-          ),
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, "/lecturer/college_report");
-            },
-            icon: const Icon(Icons.assignment_outlined),
-          ),
+
           IconButton(
             onPressed: () {
               BlocProvider.of<AuthBloc>(context).add(LoggedOut());
@@ -117,11 +102,12 @@ class _LecturerAssignmentPageState extends State<LecturerAssignmentPage> {
           }
         },
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(16),
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: const Color(0xFF0072BB),
+        elevation: 6,
         foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, size: 28),
       ),
     );
   }

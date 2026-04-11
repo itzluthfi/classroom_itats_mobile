@@ -17,8 +17,7 @@ class LecturerCreateCollegeReportPage extends StatelessWidget {
       appBar: AppBar(
         leading: BackButton(
           onPressed: () {
-            Navigator.pushNamed(context, "/lecturer/college_report/detail",
-                arguments: data);
+            Navigator.pop(context);
           },
         ),
         title: Image.asset(
@@ -30,18 +29,7 @@ class LecturerCreateCollegeReportPage extends StatelessWidget {
         scrolledUnderElevation: scrolledUnderElevation,
         shadowColor: null,
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, "/lecturer/subject_score");
-            },
-            icon: const Icon(Icons.book_sharp),
-          ),
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, "/lecturer/assignment");
-            },
-            icon: const Icon(Icons.folder_open_rounded),
-          ),
+
           IconButton(
             onPressed: () {
               BlocProvider.of<AuthBloc>(context).add(LoggedOut());

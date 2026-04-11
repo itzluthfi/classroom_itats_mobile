@@ -27,6 +27,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           emit(LoginFailure(error: response.data["message"]));
         } else {
           token = response.data["token"];
+          
+          final user = await userRepository.decodeTokenToUser(token);
+          final userRole = user.role.trim().toLowerCase();
+
+          if (userRole != "mahasiswa" && userRole != "dosen") {
+            emit(LoginFailure(
+                error: "Akses Ditolak: Aplikasi mobile tidak mendukung login untuk role '${user.role}'"));
+            return;
+          }
+
           final fbt = await userRepository.getFbt();
 
           authBloc.add(LoggedIn(token: token, fbt: fbt));

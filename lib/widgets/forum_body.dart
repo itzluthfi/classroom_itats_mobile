@@ -262,13 +262,26 @@ class _ForumBodyState extends State<ForumBody> {
       return [
         SizedBox(
           width: screenWidth,
-          height: screenHeight,
+          height: screenHeight * 0.5,
           child: const CustomScrollView(
             slivers: [
               SliverFillRemaining(
+                hasScrollBody: false,
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text("Maaf, tidak ada data yang dapat ditampilkan")
+                    Icon(Icons.forum_outlined,
+                        size: 80, color: Colors.grey),
+                    Gap(16),
+                    Text(
+                      "Maaf, tidak ada data forum yang dapat ditampilkan",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
                   ],
                 ),
               )
@@ -717,11 +730,11 @@ class _ForumBodyState extends State<ForumBody> {
       String timeStr = "";
       if (start != null && end != null) {
         try {
-          final fmtStart =
-              DateFormat("HH:mm").format(DateFormat().add_Hms().parse(start));
-          final fmtEnd =
-              DateFormat("HH:mm").format(DateFormat().add_Hms().parse(end));
-          timeStr = ", $fmtStart-$fmtEnd";
+          final fmtStart = start.toString().split(":").take(2).join(":");
+          final fmtEnd = end.toString().split(":").take(2).join(":");
+          if (fmtStart.isNotEmpty && fmtEnd.isNotEmpty) {
+            timeStr = ", $fmtStart-$fmtEnd";
+          }
         } catch (e) {
           timeStr = "";
         }
