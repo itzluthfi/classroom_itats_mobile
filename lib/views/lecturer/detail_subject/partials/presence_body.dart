@@ -55,6 +55,9 @@ class _LecturePresenceBodyState extends State<LecturePresenceBody> {
     return BlocConsumer<LectureBloc, LectureState>(
       listener: (context, state) {},
       builder: (context, state) {
+        if (state is LectureLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
         return Placeholder(
           color: const Color.fromRGBO(0, 0, 0, 0),
           child: RefreshIndicator(

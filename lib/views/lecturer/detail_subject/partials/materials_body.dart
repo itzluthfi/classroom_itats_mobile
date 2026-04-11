@@ -59,6 +59,9 @@ class _LecturerMaterialsBodyState extends State<LecturerMaterialsBody> {
     return BlocConsumer<StudyAchievementBloc, StudyAchievementState>(
       listener: (context, state) {},
       builder: (context, state) {
+        if (state is StudyAchievementLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
         return Placeholder(
           color: const Color.fromRGBO(0, 0, 0, 0),
           child: RefreshIndicator(
