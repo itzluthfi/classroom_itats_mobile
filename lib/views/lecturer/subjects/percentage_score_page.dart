@@ -23,7 +23,7 @@ class _LecturerPercentagePageState extends State<LecturerPercentagePage> {
       appBar: AppBar(
         leading: BackButton(
           onPressed: () {
-            Navigator.pushNamed(context, "/lecturer/subject_score");
+            Navigator.pop(context);
           },
         ),
         title: Image.asset(
@@ -35,18 +35,7 @@ class _LecturerPercentagePageState extends State<LecturerPercentagePage> {
         scrolledUnderElevation: scrolledUnderElevation,
         shadowColor: null,
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, "/lecturer/assignment");
-            },
-            icon: const Icon(Icons.folder_open_rounded),
-          ),
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, "/lecturer/college_report");
-            },
-            icon: const Icon(Icons.assignment_outlined),
-          ),
+
           IconButton(
             onPressed: () {
               BlocProvider.of<AuthBloc>(context).add(LoggedOut());

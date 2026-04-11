@@ -73,24 +73,20 @@ class _LecturerCollegeAppBarState extends State<LecturerCollegeAppBar> {
       shadowColor: shadowColor ? Theme.of(context).colorScheme.shadow : null,
       actions: [
         IconButton(
-          onPressed: () {
-            Navigator.pushNamed(context, "/lecturer/subject_score");
-          },
-          icon: const Icon(Icons.book_sharp),
-        ),
-        IconButton(
-          onPressed: () {
-            Navigator.pushNamed(context, "/lecturer/assignment");
-          },
-          icon: const Icon(Icons.folder_open_rounded),
-        ),
-        IconButton(
           onPressed: () => showDialog<String>(
             context: context,
             builder: (BuildContext context) => AlertDialog(
-              title: const Text('Fliter'),
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: const Text(
+                'Filter Data',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22),
+              ),
               content: SizedBox(
-                height: 150,
+                height: 160,
                 child: Column(
                   children: [
                     Row(
@@ -120,18 +116,30 @@ class _LecturerCollegeAppBarState extends State<LecturerCollegeAppBar> {
                           },
                           builder: (context, state) {
                             return DropdownMenu<String>(
+                                inputDecorationTheme: InputDecorationTheme(
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Colors.grey.shade400),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                                ),
                                 textStyle: const TextStyle(
                                   overflow: TextOverflow.ellipsis,
+                                  fontWeight: FontWeight.w600,
                                 ),
                                 menuStyle: const MenuStyle(
                                   fixedSize: WidgetStatePropertyAll(
-                                    Size.fromWidth(200),
+                                    Size.fromWidth(220),
                                   ),
                                   maximumSize: WidgetStatePropertyAll(
-                                    Size.fromWidth(200),
+                                    Size.fromWidth(220),
                                   ),
                                 ),
-                                width: 200,
+                                width: 220,
                                 initialSelection: state is AcademicPeriodLoaded
                                     ? state.currentAcademicPeriod
                                     : "",
@@ -181,18 +189,30 @@ class _LecturerCollegeAppBarState extends State<LecturerCollegeAppBar> {
                           },
                           builder: (context, state) {
                             return DropdownMenu<String>(
+                                inputDecorationTheme: InputDecorationTheme(
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Colors.grey.shade400),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                                ),
                                 textStyle: const TextStyle(
                                   overflow: TextOverflow.ellipsis,
+                                  fontWeight: FontWeight.w600,
                                 ),
                                 menuStyle: const MenuStyle(
                                   fixedSize: WidgetStatePropertyAll(
-                                    Size.fromWidth(200),
+                                    Size.fromWidth(220),
                                   ),
                                   maximumSize: WidgetStatePropertyAll(
-                                    Size.fromWidth(200),
+                                    Size.fromWidth(220),
                                   ),
                                 ),
-                                width: 200,
+                                width: 220,
                                 initialSelection: state is MajorLoaded
                                     ? state.currentMajor
                                     : "",
@@ -221,9 +241,12 @@ class _LecturerCollegeAppBarState extends State<LecturerCollegeAppBar> {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.pop(context, 'Cancel'),
-                  child: const Text('Cancel'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey.shade600,
+                  ),
+                  child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                TextButton(
+                ElevatedButton(
                   onPressed: () async {
                     BlocProvider.of<AcademicPeriodBloc>(context)
                         .add(GetAcademicPeriod());
@@ -232,7 +255,14 @@ class _LecturerCollegeAppBarState extends State<LecturerCollegeAppBar> {
                     _filterButtonPressed();
                     Navigator.pop(context, 'OK');
                   },
-                  child: const Text('OK'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F3D3E),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text('Terapkan', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),

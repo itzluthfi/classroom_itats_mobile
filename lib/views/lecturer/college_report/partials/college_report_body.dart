@@ -136,11 +136,18 @@ List<Widget> _getSubject(
     return [
       SizedBox(
         width: screenWidth,
-        height: screenHeight * 0.9,
-        child: const Column(
-          children: [
-            Gap(20),
-            Text("Mohon maaf, tidak ada data yang dapat ditampilkan"),
+        height: screenHeight * 0.6,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: const [
+            Icon(Icons.assignment_rounded, size: 80, color: Colors.grey),
+            Gap(16),
+            Text(
+              "Mohon maaf, tidak ada data pelaporan yang dapat ditampilkan",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
           ],
         ),
       )

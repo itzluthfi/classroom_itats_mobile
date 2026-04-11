@@ -11,7 +11,7 @@ class LecturerBottomNavbar extends StatefulWidget {
 
 class _LecturerBottomNavbarState extends State<LecturerBottomNavbar> {
   NavigationDestinationLabelBehavior labelBehavior =
-      NavigationDestinationLabelBehavior.onlyShowSelected;
+      NavigationDestinationLabelBehavior.alwaysShow;
 
   @override
   Widget build(BuildContext context) {

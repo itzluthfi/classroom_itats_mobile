@@ -146,15 +146,17 @@ List<Widget> _getStudentAssignmentScore(state, double screenWidth) {
     return [
       SizedBox(
         width: screenWidth,
-        height: 300,
+        height: 400,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 60, color: Colors.grey.shade400),
+            Icon(Icons.inbox_rounded, size: 80, color: Colors.grey.shade400),
             const Gap(16),
             Text(
-              "Mohon maaf, tidak ada data yang dapat ditampilkan",
-              style: TextStyle(color: Colors.grey.shade600),
+              "Mohon maaf, nilai tugas atau ujian belum tersedia",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
           ],
         ),
