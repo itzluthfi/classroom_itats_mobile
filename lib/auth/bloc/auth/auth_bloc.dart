@@ -21,11 +21,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           if (value.exp.compareTo(DateTime.now()) < 0) {
             emit(AuthUnauthenticated());
           } else {
-            switch (value.role) {
-              case "Mahasiswa":
+            switch (value.role.trim().toLowerCase()) {
+              case "mahasiswa":
                 emit(AuthAuthenticated(
                     user: value, authenticatedAs: AuthenticatedAs.student));
-              case "Dosen":
+              case "dosen":
                 emit(AuthAuthenticated(
                     user: value, authenticatedAs: AuthenticatedAs.lecturer));
               default:
@@ -50,13 +50,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       if (status != 200) {
         emit(AuthUnauthenticated());
+        return;
       }
 
-      switch (value.role) {
-        case "Mahasiswa":
+      switch (value.role.trim().toLowerCase()) {
+        case "mahasiswa":
           emit(AuthAuthenticated(
               user: value, authenticatedAs: AuthenticatedAs.student));
-        case "Dosen":
+        case "dosen":
           emit(AuthAuthenticated(
               user: value, authenticatedAs: AuthenticatedAs.lecturer));
         default:
@@ -77,11 +78,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           var user = await userRepository
               .decodeTokenToUser(await userRepository.getToken());
 
-          switch (user.role) {
-            case "Mahasiswa":
+          switch (user.role.trim().toLowerCase()) {
+            case "mahasiswa":
               emit(AuthAuthenticated(
                   user: user, authenticatedAs: AuthenticatedAs.student));
-            case "Dosen":
+            case "dosen":
               emit(AuthAuthenticated(
                   user: user, authenticatedAs: AuthenticatedAs.lecturer));
             default:
@@ -94,11 +95,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         var user = await userRepository
             .decodeTokenToUser(await userRepository.getToken());
 
-        switch (user.role) {
-          case "Mahasiswa":
+        switch (user.role.trim().toLowerCase()) {
+          case "mahasiswa":
             emit(AuthAuthenticated(
                 user: user, authenticatedAs: AuthenticatedAs.student));
-          case "Dosen":
+          case "dosen":
             emit(AuthAuthenticated(
                 user: user, authenticatedAs: AuthenticatedAs.lecturer));
           default:

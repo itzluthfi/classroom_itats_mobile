@@ -171,11 +171,31 @@ class _LecturerSubjectCardState extends State<LecturerSubjectCard> {
 List<Widget> _subjectRoomRows(List<Map<String, dynamic>> subjectSchedules) {
   List<Widget> data = List.empty(growable: true);
   for (var subjectSchedule in subjectSchedules) {
+    // Safety check for keys
+    final type = subjectSchedule["subject_type"] ?? "-";
+    final room = subjectSchedule["subject_room"] ?? "-";
+    final day = subjectSchedule["day"] ?? "";
+    final start = subjectSchedule["time_start"]?.toString();
+    final end = subjectSchedule["time_end"]?.toString();
+
+    String timeStr = "";
+    if (start != null && end != null) {
+      try {
+        final fmtStart = start.split(":").take(2).join(":");
+        final fmtEnd = end.split(":").take(2).join(":");
+        if (fmtStart.isNotEmpty && fmtEnd.isNotEmpty) {
+          timeStr = ", $fmtStart-$fmtEnd";
+        }
+      } catch (e) {
+        timeStr = "";
+      }
+    }
+
     data.add(
       Row(
         children: [
           Text(
-            "[${subjectSchedule["subject_type"]}] ${subjectSchedule["subject_room"]} ${subjectSchedule["day"]}, ${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subjectSchedule["time_start"]))}-${DateFormat("HH:mm").format(DateFormat().add_Hms().parse(subjectSchedule["time_end"]))}",
+            "[$type] $room $day$timeStr",
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
