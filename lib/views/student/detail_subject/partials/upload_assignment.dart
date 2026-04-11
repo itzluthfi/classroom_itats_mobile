@@ -1,19 +1,24 @@
 import 'dart:io';
 
+import 'package:classroom_itats_mobile/models/assignment.dart';
 import 'package:classroom_itats_mobile/user/bloc/assignment/assignment_bloc.dart';
-
+import 'package:classroom_itats_mobile/user/repositories/assignment_repository.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gap/gap.dart';
+import 'package:intl/intl.dart';
 
 class UploadAssignmentBody extends StatefulWidget {
   final double screenWidth;
   final int assignmentId;
+  final Assignment? assignment; // nullable untuk backward compatibility
   const UploadAssignmentBody({
     super.key,
     required this.screenWidth,
     required this.assignmentId,
+    this.assignment,
   });
 
   @override
@@ -24,16 +29,94 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
   final _noteController = TextEditingController();
   FilePickerResult? _result;
   File? _file;
+  bool _isDownloading = false;
+
+  bool get _sudahSubmit => widget.assignment?.sudahSubmit ?? false;
+  String get _submissionFile => widget.assignment?.submissionFile ?? '';
+  String get _submissionLink => widget.assignment?.submissionLink ?? '';
+  DateTime? get _submissionDate => widget.assignment?.submissionDate;
+
+  /// Bangun URL download yang lengkap.
+  /// file_tugas di DB disimpan sebagai path relatif,
+  /// contoh: "file_task_mhs/03-2026/namafile.pdf"
+  /// URL lengkap: https://classroom.itats.ac.id/storage/file_task_mhs/03-2026/namafile.pdf
+  String _buildDownloadUrl() {
+    // Jika submission_link sudah berupa URL lengkap, pakai langsung
+    if (_submissionLink.startsWith('http://') ||
+        _submissionLink.startsWith('https://')) {
+      return _submissionLink;
+    }
+    // Jika submission_file sudah URL lengkap, pakai langsung
+    if (_submissionFile.startsWith('http://') ||
+        _submissionFile.startsWith('https://')) {
+      return _submissionFile;
+    }
+
+    // Bangun URL dari WEB_URL + /storage/ + path relatif
+    final webUrl =
+        dotenv.get('WEB_URL').replaceAll(RegExp(r'^https?://'), '').trim();
+    final relativePath =
+        _submissionFile.isNotEmpty ? _submissionFile : _submissionLink;
+    return 'https://$webUrl/storage/$relativePath';
+  }
+
+  Future<void> _downloadSubmittedFile() async {
+    final rawPath =
+        _submissionFile.isNotEmpty ? _submissionFile : _submissionLink;
+    final fileName = rawPath.isNotEmpty
+        ? rawPath.split('/').last
+        : 'file_submission';
+
+    setState(() => _isDownloading = true);
+
+    final repo = AssignmentRepository();
+    // downloadAssignmentFile sekarang mengembalikan path file (String?) atau null jika gagal
+    final savedPath = await repo.downloadAssignmentFile(rawPath, fileName);
+
+    setState(() => _isDownloading = false);
+
+    if (!mounted) return;
+
+    if (savedPath != null) {
+      final hint = savedPath.contains('Android/data')
+          ? 'Files → Android → data → classroom_itats_mobile → files → Download'
+          : savedPath;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ File diunduh!\nLokasi: $hint'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Gagal mengunduh file. Cek koneksi internet.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AssignmentBloc, AssignmentState>(
       listener: (context, state) {
         if (state is CreateAssignmentSuccess) {
-          // Tutup bottom sheet jika sukses
+          BlocProvider.of<AssignmentBloc>(context).add(
+            GetStudentSubmitedAssignment(assignmentId: widget.assignmentId),
+          );
           Navigator.pop(context, 'OK');
         } else if (state is CreateAssignmentFailed) {
-          // Tampilkan snackbar atau biarkan notifikasi bawaan
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Gagal mengunggah tugas. Silakan coba lagi.'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       },
       builder: (context, state) {
@@ -46,19 +129,216 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Header
-              const Center(
+              Center(
                 child: Text(
-                  "Unggah Tugas",
-                  style: TextStyle(
+                  _sudahSubmit ? "Lihat / Ubah Tugas" : "Unggah Tugas",
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF0F172A),
                   ),
                 ),
               ),
-              const Gap(24),
+              const Gap(16),
 
-              // Peringatan Ekstensi File
+              // ── SECTION: Informasi Batas Waktu ──
+              if (widget.assignment != null) ...[
+                Builder(
+                  builder: (context) {
+                    final now = DateTime.now();
+                    final dueDate = widget.assignment!.dueDate.toLocal();
+                    final endTime = widget.assignment!.endTime?.toLocal() ?? dueDate;
+
+                    final isLate = now.isAfter(dueDate) && now.isBefore(endTime);
+                    final isExpired = now.isAfter(endTime);
+
+                    Color statusColor = const Color(0xFF10B981); // Hijau (Tepat Waktu)
+                    String statusText = "Tepat Waktu";
+                    IconData statusIcon = Icons.check_circle_outline;
+
+                    if (isExpired) {
+                      statusColor = const Color(0xFFEF4444); // Merah (Ditutup)
+                      statusText = "Waktu Habis / Ditutup";
+                      statusIcon = Icons.cancel_outlined;
+                    } else if (isLate) {
+                      statusColor = const Color(0xFFF59E0B); // Kuning/Oranye (Terlambat)
+                      statusText = "Terlambat";
+                      statusIcon = Icons.warning_amber_rounded;
+                    }
+
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(statusIcon, color: statusColor, size: 18),
+                              const Gap(8),
+                              Text(
+                                "Status: $statusText",
+                                style: TextStyle(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Gap(8),
+                          Text(
+                            "Batas Pengumpulan: ${DateFormat("d MMM yyyy, HH:mm").format(dueDate)}",
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          ),
+                          if (widget.assignment!.endTime != null)
+                            Text(
+                              "Batas Keterlambatan: ${DateFormat("d MMM yyyy, HH:mm").format(endTime)}",
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                            ),
+                          if (isExpired) ...[
+                            const Gap(8),
+                            const Text(
+                              "Maaf, Anda sudah tidak dapat mengumpulkan tugas.",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFFEF4444),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            )
+                          ]
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const Gap(24),
+              ],
+
+              // ── SECTION: File yang sudah dikumpulkan (hanya jika sudah submit) ──
+              if (_sudahSubmit) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.task_alt,
+                              color: Color(0xFF10B981), size: 18),
+                          Gap(8),
+                          Text(
+                            "File Tugas yang Dikumpulkan",
+                            style: TextStyle(
+                              color: Color(0xFF059669),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Gap(8),
+                      // Nama file
+                      if (_submissionFile.isNotEmpty)
+                        Text(
+                          _submissionFile.split('/').last,
+                          style: const TextStyle(
+                            color: Color(0xFF0F172A),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      else if (_submissionLink.isNotEmpty)
+                        Text(
+                          _submissionLink,
+                          style: const TextStyle(
+                            color: Color(0xFF3B82F6),
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      else
+                        Text(
+                          "Tidak ada file tersimpan",
+                          style: TextStyle(
+                              color: Colors.grey.shade500, fontSize: 12),
+                        ),
+                      // Tanggal submit
+                      if (_submissionDate != null) ...[
+                        const Gap(4),
+                        Text(
+                          "Dikumpulkan: ${DateFormat("d MMM yyyy, HH:mm").format(_submissionDate!.toLocal())}",
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                      // Tombol Download
+                      if (_submissionFile.isNotEmpty ||
+                          _submissionLink.isNotEmpty) ...[
+                        const Gap(12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed:
+                                _isDownloading ? null : _downloadSubmittedFile,
+                            icon: _isDownloading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Icon(Icons.download_rounded, size: 16),
+                            label: Text(_isDownloading
+                                ? "Mengunduh..."
+                                : "Unduh File Submission"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF10B981),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const Gap(20),
+                const Divider(),
+                const Gap(8),
+                const Text(
+                  "Ingin mengumpulkan ulang? Pilih file baru di bawah:",
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Gap(16),
+              ],
+
+              // ── Peringatan Ekstensi File ──
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -88,7 +368,7 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
               ),
               const Gap(24),
 
-              // File Picker Modern Button
+              // ── File Picker ──
               Text(
                 "Pilih File",
                 style: TextStyle(
@@ -105,19 +385,10 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                         _result = await FilePicker.platform.pickFiles(
                           type: FileType.custom,
                           allowedExtensions: [
-                            'jpg',
-                            'jpeg',
-                            'png',
-                            'pdf',
-                            'doc',
-                            'docx',
-                            'xlsx',
-                            'csv',
-                            'zip',
-                            'rar'
+                            'jpg', 'jpeg', 'png', 'pdf', 'doc',
+                            'docx', 'xlsx', 'csv', 'zip', 'rar'
                           ],
                         );
-
                         if (_result != null) {
                           setState(() {
                             _file = File(_result!.files.single.path ?? "");
@@ -137,7 +408,6 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                           ? const Color(0xFF3B82F6)
                           : Colors.grey.shade300,
                       width: 1.5,
-                      style: BorderStyle.solid, // Simulated modern stroke
                     ),
                   ),
                   child: Column(
@@ -162,8 +432,9 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                               ? const Color(0xFF0F172A)
                               : Colors.grey.shade500,
                           fontSize: 13,
-                          fontWeight:
-                              _file != null ? FontWeight.w600 : FontWeight.w500,
+                          fontWeight: _file != null
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                         ),
                       ),
                     ],
@@ -172,7 +443,7 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
               ),
               const Gap(24),
 
-              // Keterangan Input
+              // ── Keterangan ──
               Text(
                 "Keterangan (Opsional)",
                 style: TextStyle(
@@ -202,82 +473,86 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: Color(0xFF3B82F6), width: 1.5),
+                    borderSide: const BorderSide(
+                        color: Color(0xFF3B82F6), width: 1.5),
                   ),
                 ),
               ),
               const Gap(32),
 
-              // Aksi Bawah
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed:
-                          isLoading ? null : () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: Colors.grey.shade300),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        "Batal",
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const Gap(16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: (_file == null || isLoading)
-                          ? null
-                          : () {
-                              var path = _file!.path;
-                              final fileArr = _file!.path.split('/');
-                              var filename = fileArr.last;
+              // ── Tombol Aksi ──
+              Builder(
+                builder: (context) {
+                  final now = DateTime.now();
+                  final endTime = widget.assignment?.endTime?.toLocal() ?? widget.assignment?.dueDate.toLocal() ?? DateTime.now().add(const Duration(days: 1));
+                  final isExpired = now.isAfter(endTime);
 
-                              BlocProvider.of<AssignmentBloc>(context).add(
-                                SubmitAssignment(
-                                  assignmentId: widget.assignmentId,
-                                  note: _noteController.text,
-                                  fileLink: path,
-                                  fileName: filename,
-                                ),
-                              );
-                            },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: const Color(0xFF3B82F6),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: isLoading ? null : () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(color: Colors.grey.shade300),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            "Batal",
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text(
-                              "Unggah",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                      const Gap(16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: (_file == null || isLoading || isExpired)
+                              ? null
+                              : () {
+                                  final path = _file!.path;
+                                  final filename = _file!.path.split('/').last;
+                                  BlocProvider.of<AssignmentBloc>(context).add(
+                                    SubmitAssignment(
+                                      assignmentId: widget.assignmentId,
+                                      note: _noteController.text,
+                                      fileLink: path,
+                                      fileName: filename,
+                                    ),
+                                  );
+                                },
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: const Color(0xFF3B82F6),
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: Colors.grey.shade300,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                    ),
-                  ),
-                ],
+                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  "Unggah",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
               ),
             ],
           ),

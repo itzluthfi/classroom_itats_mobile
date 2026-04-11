@@ -8,18 +8,22 @@ sealed class AssignmentEvent extends Equatable {
 }
 
 class GetStudentAssignment extends AssignmentEvent {
-  final String masterActivityId;
+  final String academicPeriod;
+  final String subjectId;
+  final String subjectClass;
 
   const GetStudentAssignment({
-    required this.masterActivityId,
+    required this.academicPeriod,
+    required this.subjectId,
+    required this.subjectClass,
   });
 
   @override
-  List<Object> get props => [masterActivityId];
+  List<Object> get props => [academicPeriod, subjectId, subjectClass];
 
   @override
   String toString() =>
-      "GetStudentAssignment {masterActivityId: $masterActivityId}";
+      "GetStudentAssignment {academicPeriod: $academicPeriod, subjectId: $subjectId, subjectClass: $subjectClass}";
 }
 
 class GetActiveAssignments extends AssignmentEvent {
@@ -67,18 +71,22 @@ class GetStudentSubmitedAssignment extends AssignmentEvent {
 }
 
 class GetStudentAssignmentScore extends AssignmentEvent {
-  final String masterActivityId;
+  final String academicPeriod;
+  final String subjectId;
+  final String subjectClass;
 
   const GetStudentAssignmentScore({
-    required this.masterActivityId,
+    required this.academicPeriod,
+    required this.subjectId,
+    required this.subjectClass,
   });
 
   @override
-  List<Object> get props => [masterActivityId];
+  List<Object> get props => [academicPeriod, subjectId, subjectClass];
 
   @override
   String toString() =>
-      "GetStudentAssignmentScore {masterActivityId: $masterActivityId}";
+      "GetStudentAssignmentScore {academicPeriod: $academicPeriod, subjectId: $subjectId, subjectClass: $subjectClass}";
 }
 
 class GetLecturerAssignment extends AssignmentEvent {

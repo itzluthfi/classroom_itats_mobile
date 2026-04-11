@@ -32,14 +32,19 @@ class StudyAchievementBloc
                 event.academicPeriod, event.subjectId, event.subjectClass);
 
         var assignments = await assignmentRepository
-            .getStudyAssignment(event.masterActivityId);
+            .getStudyAssignment(
+              event.academicPeriod,
+              event.subjectId,
+              event.subjectClass,
+            );
 
         emit(StudyAchievementLoaded(
           lectureWeeks: lectureWeeks,
           studyAchievements: studyAchievements,
           assignments: assignments,
         ));
-      } catch (e) {
+      } catch (e, stackTrace) {
+        print("ERROR StudyAchievementBloc: $e\n$stackTrace");
         emit(StudyAchievementLoadFailed());
       }
     });

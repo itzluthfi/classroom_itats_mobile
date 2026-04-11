@@ -5,8 +5,10 @@ import 'package:classroom_itats_mobile/models/score_type.dart';
 import 'package:classroom_itats_mobile/models/week.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path_provider/path_provider.dart';
 
 class AssignmentRepository {
   final storage = const FlutterSecureStorage(
@@ -36,13 +38,21 @@ class AssignmentRepository {
     return assignments;
   }
 
-  Future<List<Assignment>> getStudyAssignment(String masterActivityId) async {
+  Future<List<Assignment>> getStudyAssignment(
+    String academicPeriod,
+    String subjectId,
+    String subjectClass,
+  ) async {
     final value = await storage.read(key: "token");
+
+    print("DEBUG getStudyAssignment: academicPeriod=$academicPeriod, subjectId=$subjectId, class=$subjectClass");
 
     Response response = await _dio.post(
       "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/students/subjects/materials/assignments",
       data: {
-        "master_activity_id": masterActivityId,
+        "academic_period": academicPeriod,
+        "subject_id": subjectId,
+        "class": subjectClass,
       },
       options: Options(
         contentType: "application/json",
@@ -50,10 +60,13 @@ class AssignmentRepository {
       ),
     );
 
-    final decodedData = response.data["data"] as List;
+    print("DEBUG getStudyAssignment: status = ${response.statusCode}");
 
+    final decodedData = response.data["data"] as List;
     final assignments =
         decodedData.map((data) => Assignment.fromJson(data)).toList();
+
+    print("DEBUG getStudyAssignment: parsed ${assignments.length} assignments");
 
     return assignments;
   }
@@ -133,13 +146,18 @@ class AssignmentRepository {
   }
 
   Future<List<StudentAssignmentScore>> getStudentAssignmentScore(
-      String masterActivityId) async {
+    String academicPeriod,
+    String subjectId,
+    String subjectClass,
+  ) async {
     final value = await storage.read(key: "token");
 
     Response response = await _dio.post(
       "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/students/subjects/scores",
       data: {
-        "master_activity_id": masterActivityId,
+        "academic_period": academicPeriod,
+        "subject_id": subjectId,
+        "class": subjectClass,
       },
       options: Options(
         contentType: "application/json",
@@ -194,46 +212,74 @@ class AssignmentRepository {
     return scoreType;
   }
 
-  Future<int> downloadAssignmentFile(String fileLink, String fileName) async {
-    Directory? downloadDir;
-
-    if (Platform.isAndroid) {
-      downloadDir = Directory("/storage/emulated/0/Download");
+  /// Mengunduh file menggunakan Android DownloadManager (via MethodChannel)
+  /// sehingga file tersimpan di folder Download bawaan device (/storage/emulated/0/Download/).
+  /// Tidak memerlukan permission WRITE_EXTERNAL_STORAGE apapun.
+  /// Mengembalikan nama file jika berhasil antri download, null jika gagal.
+  Future<String?> downloadAssignmentFile(String fileLink, String fileName) async {
+    // === NORMALISASI URL ===
+    final String fullUrl;
+    if (fileLink.startsWith('http://') || fileLink.startsWith('https://')) {
+      fullUrl = fileLink;
+    } else {
+      final webHost = dotenv
+          .get('WEB_URL', fallback: '')
+          .replaceAll(RegExp(r'^https?://'), '')
+          .replaceAll('"', '')
+          .trim();
+      fullUrl = 'https://$webHost/storage/$fileLink';
     }
 
-    _dio.httpClientAdapter = IOHttpClientAdapter(
-      createHttpClient: () {
-        HttpClient client = HttpClient();
-        client.badCertificateCallback =
-            (X509Certificate cert, String host, int port) {
-          return true;
-        };
-        return client;
-      },
-    );
+    print("[DOWNLOAD] URL asli  : $fileLink");
+    print("[DOWNLOAD] URL final : $fullUrl");
+    print("[DOWNLOAD] File name : $fileName");
 
     try {
-      Response response = await _dio.get(
-        fileLink,
-        options: Options(
+      if (Platform.isAndroid) {
+        // Gunakan Android DownloadManager → menyimpan langsung ke /storage/emulated/0/Download/
+        // tanpa permission apapun.
+        const channel = MethodChannel('com.itats.classroom/download');
+        final downloadId = await channel.invokeMethod<String>('downloadFile', {
+          'url': fullUrl,
+          'fileName': fileName,
+          'title': fileName,
+        });
+        print("[DOWNLOAD] DownloadManager ID: $downloadId");
+        // downloadId non-null = berhasil di-queue oleh sistem
+        return downloadId != null ? fileName : null;
+      } else {
+        // iOS / Desktop: fallback ke Dio + app documents directory
+        final docsDir = await getApplicationDocumentsDirectory();
+        _dio.httpClientAdapter = IOHttpClientAdapter(
+          createHttpClient: () {
+            final client = HttpClient();
+            client.badCertificateCallback =
+                (X509Certificate cert, String host, int port) => true;
+            return client;
+          },
+        );
+        final response = await _dio.get(
+          fullUrl,
+          options: Options(
             responseType: ResponseType.bytes,
-            followRedirects: false,
-            validateStatus: (status) {
-              return status! == 200;
-            }),
-      );
-
-      File file = File("${downloadDir!.path}/$fileName");
-      var raf = file.openSync(mode: FileMode.write);
-      // response.data is List<int> type
-      raf.writeFromSync(response.data);
-      await raf.close();
-
-      return response.statusCode ?? 404;
+            followRedirects: true,
+            validateStatus: (s) => s != null && s >= 200 && s < 300,
+          ),
+        );
+        final file = File('${docsDir.path}/$fileName');
+        final raf = file.openSync(mode: FileMode.write);
+        raf.writeFromSync(response.data);
+        await raf.close();
+        print("[DOWNLOAD] Berhasil (iOS)! Disimpan di: ${file.path}");
+        return file.path;
+      }
     } catch (e) {
-      return 500;
+      print("[DOWNLOAD] Exception: $e");
+      print("[DOWNLOAD] URL: $fullUrl");
+      return null;
     }
   }
+
 
   Future<int> createAssignment(
     String activityMasterId,
@@ -321,30 +367,50 @@ class AssignmentRepository {
       });
     }
 
-    _dio.httpClientAdapter = IOHttpClientAdapter(
-      createHttpClient: () {
-        HttpClient client = HttpClient();
-        client.badCertificateCallback =
-            (X509Certificate cert, String host, int port) {
-          return true;
-        };
-        return client;
-      },
-    );
 
-    Response response = await _dio.post(
-      "${dotenv.get("WEB_PROTOCOL")}${dotenv.get("WEB_URL")}/api/students/assignments/submit",
-      data: formData,
-      options: Options(
-        contentType: "application/x-www-form-urlencoded",
-        headers: {
-          "token": value,
-        },
-      ),
-    );
 
-    final decodedData = response.statusCode ?? 0;
+    // Force HTTPS — WEB_URL harus tanpa protocol, kita hardcode https://
+    final webUrl = dotenv.get("WEB_URL").replaceAll(RegExp(r'^https?://'), '');
+    final submitUrl = "https://$webUrl/api/students/assignments/submit";
 
-    return decodedData;
+    try {
+      Response response = await _dio.post(
+        submitUrl,
+        data: formData,
+        options: Options(
+          responseType: ResponseType.plain,
+          followRedirects: false,
+          validateStatus: (status) => status! < 500,
+          receiveTimeout: const Duration(seconds: 30),
+          sendTimeout: const Duration(seconds: 30),
+          headers: {
+            "token": value,
+            "Accept": "application/json",
+            "User-Agent": "ClassroomItatsMobileApp/1.0",
+          },
+        ),
+      );
+
+      print("======== API SUBMIT RESPONSE ========");
+      print("Status Code: ${response.statusCode}");
+      print("Response Data: ${response.data}");
+      print("=====================================");
+
+      final decodedData = response.statusCode ?? 0;
+      return decodedData;
+    } catch (e) {
+      if (e is DioException) {
+        print("======== API SUBMIT ERROR ========");
+        print("Status Code: ${e.response?.statusCode}");
+        print("Response Data: ${e.response?.data}");
+        print("Type: ${e.type}");
+        print("Message: ${e.message}");
+        print("Error: ${e.error}");
+        print("================================");
+      } else {
+        print("Error submitting assignment: $e");
+      }
+      return 0; // Kembalikan 0 sebagai tanda gagal (akan diproses di BLoC).
+    }
   }
 }

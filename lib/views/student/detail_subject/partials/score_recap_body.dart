@@ -26,14 +26,15 @@ class _StudentScoreRecapBodyState extends State<StudentScoreRecapBody> {
   }
 
   _checkLoad() async {
-    bool loaded =
-        await widget.userRepository.getWidgetState('student_score_recap');
-    if (!loaded) {
+    final currentState = BlocProvider.of<AssignmentBloc>(context).state;
+    if (currentState is! AssignmentLoaded) {
       setState(() {
         BlocProvider.of<AssignmentBloc>(context).add(GetStudentAssignmentScore(
-            masterActivityId: widget.subject.activityMasterId));
+          academicPeriod: widget.subject.academicPeriodId,
+          subjectId: widget.subject.subjectId,
+          subjectClass: widget.subject.subjectClass,
+        ));
       });
-      await widget.userRepository.setWidgetState('student_score_recap', true);
     }
   }
 
@@ -88,7 +89,10 @@ class _StudentScoreRecapBodyState extends State<StudentScoreRecapBody> {
                 setState(() {
                   BlocProvider.of<AssignmentBloc>(context).add(
                       GetStudentAssignmentScore(
-                          masterActivityId: widget.subject.activityMasterId));
+                        academicPeriod: widget.subject.academicPeriodId,
+                        subjectId: widget.subject.subjectId,
+                        subjectClass: widget.subject.subjectClass,
+                      ));
                 });
               }),
         );

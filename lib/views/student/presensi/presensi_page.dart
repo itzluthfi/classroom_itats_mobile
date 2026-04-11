@@ -2,6 +2,9 @@ import 'package:classroom_itats_mobile/user/bloc/academic_period/academic_period
 import 'package:classroom_itats_mobile/user/bloc/presensi/presensi_bloc.dart';
 import 'package:classroom_itats_mobile/user/repositories/academic_period_repository.dart';
 import 'package:classroom_itats_mobile/models/active_presence.dart';
+import 'package:classroom_itats_mobile/models/lecture.dart';
+import 'package:classroom_itats_mobile/models/subject.dart';
+import 'package:classroom_itats_mobile/views/student/detail_subject/partials/presence_question_body.dart';
 import 'package:classroom_itats_mobile/views/student/home/partials/app_bar.dart';
 import 'package:classroom_itats_mobile/views/student/presensi/partials/presensi_card.dart';
 import 'package:flutter/material.dart';
@@ -227,19 +230,83 @@ class _StudentPresensiPageState extends State<StudentPresensiPage> {
                                       onCardTap: () {
                                         if (!presence.sudahPresensi &&
                                             !presence.isHabisWaktu) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                  "Buka detail presensi untuk: ${presence.kul.subjectName}"),
-                                              behavior:
-                                                  SnackBarBehavior.floating,
-                                              shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          10)),
-                                            ),
+                                          // Konversi ActivePresence → Lecture + Subject
+                                          final kul = presence.kul;
+
+                                          final lecture = Lecture(
+                                            lectureID: kul.lectureId,
+                                            academicPeriodID:
+                                                kul.academicPeriodId,
+                                            subjectID: kul.subjectId,
+                                            majorID: kul.majorId,
+                                            lecturerID: kul.lecturerId,
+                                            subjectClass: kul.subjectClass,
+                                            lectureSchedule: DateTime.tryParse(
+                                                kul.lectureSchedule),
+                                            lectureType: kul.lectureType,
+                                            hourID: kul.hourId,
+                                            material: kul.materialRealization,
+                                            lectureLink: kul.lectureLink,
+                                            approvalStatus: kul.approvalStatus,
+                                            weekID: kul.weekId,
+                                            timeRealization:
+                                                kul.timeRealization,
+                                            timeSuitability:
+                                                kul.timeSuitability,
+                                            materialSuitability:
+                                                kul.materialSuitability,
+                                            materialLink: kul.materialLink,
+                                            presenceLimit: DateTime.tryParse(
+                                                kul.presenceLimit),
+                                            presenceStudent:
+                                                kul.presenceStudent,
+                                            linkMeet: kul.linkMeet,
+                                            linkRecord: kul.linkRecord,
+                                            collegeType: kul.collegeType,
+                                            collegeTypeName:
+                                                kul.collegeTypeName,
                                           );
+
+                                          final subject = Subject(
+                                            subjectClass: kul.subjectClass,
+                                            subjectCredits: 0,
+                                            subjectId: kul.subjectId,
+                                            majorId: kul.majorId,
+                                            majorName: "",
+                                            academicPeriodId:
+                                                kul.academicPeriodId,
+                                            lecturerId: kul.lecturerId,
+                                            subjectName: kul.subjectName,
+                                            totalStudent: 0,
+                                            activityMasterId: "",
+                                            lecturerName: "",
+                                            subjectSchedule: [],
+                                          );
+
+                                          showDialog<String>(
+                                            context: context,
+                                            builder: (BuildContext ctx) {
+                                              return CustomAlertDialog(
+                                                subject: subject,
+                                                screenWidth:
+                                                    MediaQuery.of(context)
+                                                        .size
+                                                        .width,
+                                                lecture: lecture,
+                                              );
+                                            },
+                                          ).then((result) {
+                                            // Setelah absen, reload data presensi
+                                            final period = _lastLoadedPeriod;
+                                            if (result == "OK" &&
+                                                period != null &&
+                                                context.mounted) {
+                                              context.read<PresensiBloc>().add(
+                                                    LoadActivePresences(
+                                                        period),
+                                                  );
+                                            }
+                                          });
                                         }
                                       },
                                     );

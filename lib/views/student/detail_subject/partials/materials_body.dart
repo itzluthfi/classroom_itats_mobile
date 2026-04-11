@@ -32,18 +32,21 @@ class _StudentMaterialsBodyState extends State<StudentMaterialsBody> {
   }
 
   _checkLoad() async {
-    bool loaded =
-        await widget.userRepository.getWidgetState('student_material');
-    if (!loaded) {
+    // Selalu load jika bloc belum dalam state Loaded
+    final currentState = BlocProvider.of<StudyAchievementBloc>(context).state;
+    print("DEBUG _checkLoad: state = $currentState");
+
+    if (currentState is! StudyAchievementLoaded) {
+      print("DEBUG _checkLoad: Triggering GetStudyAchievement...");
       setState(() {
         BlocProvider.of<StudyAchievementBloc>(context).add(GetStudyAchievement(
           academicPeriod: widget.subject.academicPeriodId,
           subjectId: widget.subject.subjectId,
           subjectClass: widget.subject.subjectClass,
-          masterActivityId: widget.subject.activityMasterId,
         ));
       });
-      await widget.userRepository.setWidgetState('student_material', true);
+    } else {
+      print("DEBUG _checkLoad: Already loaded, assignments count = ${currentState.assignments.length}");
     }
   }
 
@@ -86,7 +89,6 @@ class _StudentMaterialsBodyState extends State<StudentMaterialsBody> {
                   academicPeriod: widget.subject.academicPeriodId,
                   subjectId: widget.subject.subjectId,
                   subjectClass: widget.subject.subjectClass,
-                  masterActivityId: widget.subject.activityMasterId,
                 ));
               });
             });
