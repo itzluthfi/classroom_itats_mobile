@@ -158,13 +158,29 @@ List<Widget> _getSubject(SubjectState state, String currentSemesterStr,
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            currentSemesterStr,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF64748B), // Slate gray color
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E3A8A).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(
+                  color: const Color(0xFF1E3A8A).withOpacity(0.12)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.calendar_today_rounded, size: 14, color: Color(0xFF1E3A8A)),
+                const SizedBox(width: 8),
+                Text(
+                  currentSemesterStr,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF1E3A8A),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

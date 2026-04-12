@@ -49,15 +49,7 @@ class SubjectRepository {
     );
 
     final decodedData = jsonDecode(jsonEncode(response.data["data"])) as List;
-    print("========== API DEBUG: getSubjects ==========");
-    try {
-      final prettyString =
-          const JsonEncoder.withIndent('  ').convert(decodedData);
-      print(prettyString);
-    } catch (e) {
-      print("Failed to pretty print: $decodedData");
-    }
-    print("============================================");
+
 
     final subjects = decodedData.map((data) => Subject.fromJson(data)).toList();
 

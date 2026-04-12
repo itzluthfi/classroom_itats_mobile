@@ -24,7 +24,7 @@ class StudentPresensiPage extends StatefulWidget {
 
 class _StudentPresensiPageState extends State<StudentPresensiPage> {
   String? _lastLoadedPeriod;
-  String _selectedFilter = 'Semua';
+  String _selectedFilter = 'Belum';
 
   @override
   void initState() {
@@ -106,13 +106,14 @@ class _StudentPresensiPageState extends State<StudentPresensiPage> {
                               top: 24.0, bottom: 8.0, left: 16.0, right: 16.0),
                           color: const Color(0xFFF8FAFC),
                           child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Expanded(
                                 child: Text(
                                   "Presensi Aktif (${displayList.length})",
                                   style: const TextStyle(
-                                    fontSize: 24,
+                                    fontSize: 22,
                                     fontWeight: FontWeight.w900,
                                     color: Color(0xFF1E293B),
                                     letterSpacing: -0.5,
@@ -123,7 +124,7 @@ class _StudentPresensiPageState extends State<StudentPresensiPage> {
                               BlocBuilder<AcademicPeriodBloc,
                                   AcademicPeriodState>(
                                 builder: (context, periodState) {
-                                  String periodName = "Memuat periode...";
+                                  String periodName = "Loading...";
                                   if (periodState is AcademicPeriodLoaded &&
                                       _lastLoadedPeriod != null) {
                                     try {
@@ -137,12 +138,24 @@ class _StudentPresensiPageState extends State<StudentPresensiPage> {
                                       periodName = _lastLoadedPeriod!;
                                     }
                                   }
-                                  return Text(
-                                    periodName,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.blueGrey.shade600,
-                                      fontWeight: FontWeight.w500,
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1E3A8A)
+                                          .withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(30),
+                                      border: Border.all(
+                                          color: const Color(0xFF1E3A8A)
+                                              .withOpacity(0.12)),
+                                    ),
+                                    child: Text(
+                                      periodName,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF1E3A8A),
+                                        fontWeight: FontWeight.w800,
+                                      ),
                                     ),
                                   );
                                 },
@@ -154,42 +167,31 @@ class _StudentPresensiPageState extends State<StudentPresensiPage> {
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0, vertical: 8.0),
+                              horizontal: 16.0, vertical: 12.0),
                           child: Row(
-                            children: ['Semua', 'Belum', 'Sudah']
-                                .map((String filter) {
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: ChoiceChip(
-                                  label: Text(filter),
-                                  selected: _selectedFilter == filter,
-                                  selectedColor: const Color(0xFF1E3A8A),
-                                  checkmarkColor: Colors.white,
-                                  labelStyle: TextStyle(
-                                    color: _selectedFilter == filter
-                                        ? Colors.white
-                                        : Colors.grey.shade700,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  backgroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    side: BorderSide(
-                                      color: _selectedFilter == filter
-                                          ? Colors.transparent
-                                          : Colors.grey.shade300,
-                                    ),
-                                  ),
-                                  onSelected: (bool selected) {
-                                    setState(() {
-                                      if (selected) {
-                                        _selectedFilter = filter;
-                                      }
-                                    });
-                                  },
-                                ),
-                              );
-                            }).toList(),
+                            children: [
+                              _buildFilterChip(
+                                label: 'Semua',
+                                count: state.allPresences.length,
+                                isSelected: _selectedFilter == 'Semua',
+                                onSelected: (val) =>
+                                    setState(() => _selectedFilter = 'Semua'),
+                              ),
+                              _buildFilterChip(
+                                label: 'Belum',
+                                count: state.belumAbsen.length,
+                                isSelected: _selectedFilter == 'Belum',
+                                onSelected: (val) =>
+                                    setState(() => _selectedFilter = 'Belum'),
+                              ),
+                              _buildFilterChip(
+                                label: 'Sudah',
+                                count: state.sudahAbsen.length,
+                                isSelected: _selectedFilter == 'Sudah',
+                                onSelected: (val) =>
+                                    setState(() => _selectedFilter = 'Sudah'),
+                              ),
+                            ],
                           ),
                         ),
                         Expanded(
@@ -322,6 +324,37 @@ class _StudentPresensiPageState extends State<StudentPresensiPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required int count,
+    required bool isSelected,
+    required Function(bool) onSelected,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: ChoiceChip(
+        label: Text("$label ($count)"),
+        selected: isSelected,
+        selectedColor: const Color(0xFF1E3A8A),
+        checkmarkColor: Colors.white,
+        labelStyle: TextStyle(
+          color: isSelected ? Colors.white : Colors.grey.shade700,
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+        ),
+        backgroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(100),
+          side: BorderSide(
+            color: isSelected ? Colors.transparent : Colors.grey.shade300,
+          ),
+        ),
+        onSelected: onSelected,
       ),
     );
   }
