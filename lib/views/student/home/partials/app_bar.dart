@@ -96,77 +96,226 @@ class _StudentAppBarState extends State<StudentAppBar> {
                 InkWell(
                   onTap: () => showDialog<String>(
                     context: context,
-                    builder: (BuildContext context) => AlertDialog(
-                      title: const Text('Filter Semester'),
-                      content: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          BlocBuilder<AuthBloc, AuthState>(
-                              builder: (context, authState) {
-                            String userNpm = "";
-                            if (authState is AuthAuthenticated) {
-                              userNpm = authState.user.name;
-                            }
-                            return BlocConsumer<AcademicPeriodBloc,
-                                    AcademicPeriodState>(
-                                listener: (context, state) {
-                              if (state is AcademicPeriodLoadFailed) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text(
-                                        'Gagal Menampilkan Periode Akademik'),
-                                    duration:
-                                        const Duration(milliseconds: 1500),
-                                  ),
-                                );
-                              }
-                            }, builder: (context, state) {
-                              return DropdownMenu<String>(
-                                width: 220,
-                                initialSelection: state is AcademicPeriodLoaded
-                                    ? state.currentAcademicPeriod
-                                    : "",
-                                label: const Text("Tahun Ajaran"),
-                                onSelected: (String? value) {
-                                  widget.academicPeriodRepository
-                                      .setAcademicPeriod(value ?? "");
-                                },
-                                dropdownMenuEntries: state
-                                        is AcademicPeriodLoaded
-                                    ? state.academicPeriod.map((value) {
-                                        final semNum =
-                                            SemesterHelper.calculateSemester(
-                                                userNpm,
-                                                value.yearStart,
-                                                value.oddEven);
-                                        final calYear = SemesterHelper
-                                            .calculateCalendarYear(
-                                                value.yearStart, value.oddEven);
-                                        return DropdownMenuEntry(
-                                            value: value.academicPeriodId,
-                                            label: "Semester $semNum $calYear");
-                                      }).toList()
-                                    : [],
-                              );
-                            });
-                          }),
-                        ],
+                    builder: (BuildContext context) => Dialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                      actions: <Widget>[
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, 'Cancel'),
-                          child: const Text('Batal'),
+                      elevation: 0,
+                      backgroundColor: Colors.transparent,
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
                         ),
-                        TextButton(
-                          onPressed: () {
-                            BlocProvider.of<AcademicPeriodBloc>(context)
-                                .add(GetAcademicPeriod());
-                            _onButtonFilterPressed();
-                            Navigator.pop(context, 'OK');
-                          },
-                          child: const Text('Terapkan'),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF14307E)
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.filter_list_rounded,
+                                    color: Color(0xFF14307E),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                const Text(
+                                  'Filter Semester',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w900,
+                                    color: Color(0xFF14307E),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Content
+                            BlocBuilder<AuthBloc, AuthState>(
+                              builder: (context, authState) {
+                                String userNpm = "";
+                                if (authState is AuthAuthenticated) {
+                                  userNpm = authState.user.name;
+                                }
+                                return BlocConsumer<AcademicPeriodBloc,
+                                    AcademicPeriodState>(
+                                  listener: (context, state) {
+                                    if (state is AcademicPeriodLoadFailed) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              'Gagal Menampilkan Periode Akademik'),
+                                          duration: Duration(milliseconds: 1500),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  builder: (context, state) {
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          "Pilih Periode Akademik",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                        LayoutBuilder(
+                                          builder: (context, constraints) {
+                                            return DropdownMenu<String>(
+                                              width: constraints.maxWidth,
+                                              initialSelection:
+                                                  state is AcademicPeriodLoaded
+                                                      ? state.currentAcademicPeriod
+                                                      : "",
+                                              requestFocusOnTap: false,
+                                              onSelected: (String? value) {
+                                                widget.academicPeriodRepository
+                                                    .setAcademicPeriod(value ?? "");
+                                              },
+                                              menuStyle: MenuStyle(
+                                                backgroundColor: MaterialStateProperty.all(Colors.white),
+                                                elevation: MaterialStateProperty.all(8),
+                                                shape: MaterialStateProperty.all(
+                                                  RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                  ),
+                                                ),
+                                              ),
+                                              inputDecorationTheme:
+                                                  InputDecorationTheme(
+                                                filled: true,
+                                                fillColor: Colors.grey.shade50,
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  borderSide: BorderSide(
+                                                      color: Colors.grey.shade300),
+                                                ),
+                                                enabledBorder: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  borderSide: BorderSide(
+                                                      color: Colors.grey.shade300),
+                                                ),
+                                                focusedBorder: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  borderSide: const BorderSide(
+                                                      color: Color(0xFF14307E), width: 1.5),
+                                                ),
+                                              ),
+                                              dropdownMenuEntries: state
+                                                      is AcademicPeriodLoaded
+                                                  ? state.academicPeriod.map((value) {
+                                                      final semNum = SemesterHelper
+                                                          .calculateSemester(
+                                                              userNpm,
+                                                              value.yearStart,
+                                                              value.oddEven);
+                                                      final calYear = SemesterHelper
+                                                          .calculateCalendarYear(
+                                                              value.yearStart,
+                                                              value.oddEven);
+                                                      return DropdownMenuEntry(
+                                                          value:
+                                                              value.academicPeriodId,
+                                                          label:
+                                                              "Semester $semNum $calYear",
+                                                          style: MenuItemButton.styleFrom(
+                                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                          ));
+                                                    }).toList()
+                                                  : [],
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            // Actions
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, 'Cancel'),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Batal',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      BlocProvider.of<AcademicPeriodBloc>(
+                                              context)
+                                          .add(GetAcademicPeriod());
+                                      _onButtonFilterPressed();
+                                      Navigator.pop(context, 'OK');
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF14307E),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Terapkan',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                   child: Padding(
@@ -186,32 +335,121 @@ class _StudentAppBarState extends State<StudentAppBar> {
                   onTap: () {
                     // Show simple bottom sheet or navigation
                     showModalBottomSheet(
-                        context: context,
-                        builder: (context) => Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ListTile(
-                                  leading: const Icon(Icons.person),
-                                  title: const Text('Profil Saya'),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    Navigator.pushNamed(
-                                        context, "/student/profile");
-                                  },
-                                ),
-                                ListTile(
-                                  leading: const Icon(Icons.logout,
-                                      color: Colors.red),
-                                  title: const Text('Keluar',
-                                      style: TextStyle(color: Colors.red)),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    BlocProvider.of<AuthBloc>(context)
-                                        .add(LoggedOut());
-                                  },
-                                ),
-                              ],
-                            ));
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      isScrollControlled: true,
+                      builder: (context) {
+                        return BlocBuilder<AuthBloc, AuthState>(
+                          builder: (context, authState) {
+                            String userName = "Mahasiswa";
+                            String userNpm = "-";
+
+                            if (authState is AuthAuthenticated) {
+                              userNpm = authState.user.name;
+                            }
+
+                            return Container(
+                              margin: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(32),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.15),
+                                    blurRadius: 30,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    width: 40,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade300,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  // User Info Header
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24),
+                                    child: Row(
+                                      children: [
+                                        const CircleAvatar(
+                                          radius: 30,
+                                          backgroundColor: Color(0xFFF0B384),
+                                          child: Icon(Icons.person,
+                                              size: 35, color: Colors.white),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                userName,
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF14307E),
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              Text(
+                                                "NPM. $userNpm",
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.grey.shade600,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  const Divider(height: 1),
+                                  const SizedBox(height: 8),
+                                  // Menu Items
+                                  _buildProfileMenuItem(
+                                    context: context,
+                                    icon: Icons.person_outline_rounded,
+                                    title: 'Profil Saya',
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      Navigator.pushNamed(
+                                          context, "/student/profile");
+                                    },
+                                  ),
+                                  _buildProfileMenuItem(
+                                    context: context,
+                                    icon: Icons.logout_rounded,
+                                    title: 'Keluar',
+                                    isDestructive: true,
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      BlocProvider.of<AuthBloc>(context)
+                                          .add(LoggedOut());
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    );
                   },
                   child: const CircleAvatar(
                     radius: 20,
@@ -224,6 +462,54 @@ class _StudentAppBarState extends State<StudentAppBar> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileMenuItem({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    final color = isDestructive ? Colors.red : const Color(0xFF14307E);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: isDestructive ? Colors.red : Colors.black87,
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.grey.shade400,
+                size: 20,
+              ),
+            ],
+          ),
         ),
       ),
     );

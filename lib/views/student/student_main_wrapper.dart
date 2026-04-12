@@ -78,7 +78,7 @@ class _StudentMainWrapperState extends State<StudentMainWrapper> {
             // Elevasi dan border radius untuk tampilan lebih modern
             elevation: 10,
             type: BottomNavigationBarType.fixed,
-            backgroundColor: Theme.of(context).colorScheme.surface,
+            backgroundColor: Colors.white,
             selectedItemColor: primaryColor,
             unselectedItemColor: unselectedColor,
             showUnselectedLabels: true,
@@ -151,7 +151,7 @@ class _StudentMainWrapperState extends State<StudentMainWrapper> {
                           // totalSubmited == 0 && dueDate.isAfter(DateTime.now())
                           final unsubmittedCount = state.assignments
                               .where((item) =>
-                                  item.totalSubmited == 0 &&
+                                  !item.sudahSubmit &&
                                   item.dueDate.isAfter(DateTime.now()))
                               .length;
 

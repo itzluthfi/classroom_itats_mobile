@@ -25,7 +25,7 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
   List<Assignment> _filteredAssignments = [];
   final TextEditingController _searchController = TextEditingController();
 
-  String _selectedStatusFilter = 'Semua';
+  String _selectedStatusFilter = 'Belum';
 
   // Get status options
   final List<String> _statusOptions = [
@@ -179,10 +179,9 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                       if (widget.academicPeriodRepository != null)
                         BlocBuilder<AcademicPeriodBloc, AcademicPeriodState>(
                           builder: (context, periodState) {
-                            String periodName = "Memuat periode...";
+                            String periodName = "Loading...";
                             if (periodState is AcademicPeriodLoaded) {
                               try {
-                                // Find the currently active academic period description safely
                                 final matched =
                                     periodState.academicPeriod.firstWhere(
                                   (p) =>
@@ -194,12 +193,22 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                                 periodName = periodState.currentAcademicPeriod;
                               }
                             }
-                            return Text(
-                              periodName,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.blueGrey.shade600,
-                                fontWeight: FontWeight.w500,
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E3A8A).withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(
+                                    color: const Color(0xFF1E3A8A).withOpacity(0.12)),
+                              ),
+                              child: Text(
+                                periodName,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF1E3A8A),
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             );
                           },
@@ -432,19 +441,28 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                     ],
                   ),
                 ),
-                const Gap(8),
-                Column(
+                const Gap(8),                Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      "Minggu ${data.weekId}",
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9), // Slate 100
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFE2E8F0)), // Slate 200
+                      ),
+                      child: Text(
+                        "Minggu ${data.weekId}",
+                        style: const TextStyle(
+                          color: Color(0xFF475569), // Slate 600
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
-                    const Gap(4),
+                    const Gap(6),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
@@ -466,71 +484,87 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                 ),
               ],
             ),
-            const Gap(10),
+            const Gap(14),
 
             // Deadline / Kelas
-            Row(
-              children: [
-                Icon(
-                  isLate && !sudahSubmit
-                      ? Icons.warning_amber_rounded
-                      : Icons.access_time,
-                  size: 13,
-                  color: isLate && !sudahSubmit
-                      ? const Color(0xFFEF4444)
-                      : Colors.grey.shade500,
-                ),
-                const Gap(4),
-                Text(
-                  "Tenggat: ${DateFormat("d MMM y, HH:mm").format(data.dueDate)}",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isLate && !sudahSubmit
-                        ? const Color(0xFFEF4444)
-                        : Colors.grey.shade500,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const Gap(12),
-                Icon(Icons.bookmark_border,
-                    size: 13, color: Colors.grey.shade500),
-                const Gap(4),
-                Text(
-                  "Kelas: ${data.subjectClass}",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            if (data.endTime != null && data.endTime!.isAfter(data.dueDate)) ...[
-              const Gap(4),
-              Row(
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFF1F5F9)),
+              ),
+              child: Column(
                 children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    size: 13,
-                    color: isExpired && !sudahSubmit
-                        ? const Color(0xFFEF4444)
-                        : Colors.grey.shade500,
+                  Row(
+                    children: [
+                      Icon(
+                        isLate && !sudahSubmit
+                            ? Icons.warning_amber_rounded
+                            : Icons.access_time_filled_rounded,
+                        size: 14,
+                        color: isLate && !sudahSubmit
+                            ? const Color(0xFFEF4444)
+                            : const Color(0xFF64748B),
+                      ),
+                      const Gap(8),
+                      Expanded(
+                        child: Text(
+                          "Tenggat: ${DateFormat("d MMM y, HH:mm").format(data.dueDate)}",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isLate && !sudahSubmit
+                                ? const Color(0xFFEF4444)
+                                : const Color(0xFF334155), // Slate 700
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const Gap(8),
+                      Icon(Icons.class_rounded,
+                          size: 14, color: const Color(0xFF64748B)),
+                      const Gap(4),
+                      Text(
+                        "Kelas: ${data.subjectClass}",
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF334155),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
-                  const Gap(4),
-                  Text(
-                    "Batas Terlambat: ${DateFormat("d MMM y, HH:mm").format(data.endTime!)}",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isExpired && !sudahSubmit
-                          ? const Color(0xFFEF4444)
-                          : Colors.grey.shade500,
-                      fontWeight: FontWeight.w500,
+                  if (data.endTime != null && data.endTime!.isAfter(data.dueDate)) ...[
+                    const Gap(8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          size: 14,
+                          color: isExpired && !sudahSubmit
+                              ? const Color(0xFFEF4444)
+                              : const Color(0xFF64748B),
+                        ),
+                        const Gap(8),
+                        Expanded(
+                          child: Text(
+                            "Batas Terlambat: ${DateFormat("d MMM y, HH:mm").format(data.endTime!)}",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isExpired && !sudahSubmit
+                                  ? const Color(0xFFEF4444)
+                                  : const Color(0xFF475569),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                  ],
                 ],
               ),
-            ],
-            const Gap(12),
+            ),
+            const Gap(16),
 
             // ── SECTION: Info submission (mirip assignments_body.dart) ──
             if (sudahSubmit) ...[

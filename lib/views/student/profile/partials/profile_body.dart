@@ -1,8 +1,11 @@
 import 'dart:io';
 
 import 'package:classroom_itats_mobile/models/profile.dart';
+import 'package:classroom_itats_mobile/models/subject.dart';
 import 'package:classroom_itats_mobile/user/bloc/profile/profile_bloc.dart';
+import 'package:classroom_itats_mobile/user/cubit/page_index_cubit.dart';
 import 'package:classroom_itats_mobile/user/repositories/academic_period_repository.dart';
+import 'package:classroom_itats_mobile/user/repositories/subject_repository.dart';
 import 'package:classroom_itats_mobile/widgets/textfield.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,675 +26,582 @@ class ProfileBody extends StatefulWidget {
 
 class _ProfileBodyState extends State<ProfileBody> {
   File? image;
-  var emailController = TextEditingController();
-  var phoneNumberController = TextEditingController();
+  final emailController = TextEditingController();
+  final phoneNumberController = TextEditingController();
+  final Color primaryColor = const Color(0xFF14307E);
+  final Color placeholderColor = const Color(0xFFF0B384);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  List<Subject> _fullSubjects = [];
+
+  void _loadProfile() async {
+    final period = await widget.academicPeriodRepository.getCurrentAcademicPeriod();
+    if (mounted) {
+      context.read<ProfileBloc>().add(GetStudentProfile(academicPeriod: period));
+      
+      // Fetch full subjects to enable redirection
+      final subjects = await SubjectRepository().getSubjects(period: period);
+      if (mounted) {
+        setState(() {
+          _fullSubjects = subjects;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    phoneNumberController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    widget.academicPeriodRepository.getCurrentAcademicPeriod().then((value) =>
-        BlocProvider.of<ProfileBloc>(context)
-            .add(GetStudentProfile(academicPeriod: value)));
-    double screenWidth = MediaQuery.of(context).size.width * 0.9;
-
-    return BlocConsumer<ProfileBloc, ProfileState>(listener: (context, state) {
-      if (state is ProfileLoaded) {
-        if (emailController.text == "" && phoneNumberController.text == "") {
-          emailController.text = state.profile.email;
-          phoneNumberController.text = state.profile.phoneNumber;
+    return BlocConsumer<ProfileBloc, ProfileState>(
+      listener: (context, state) {
+        if (state is ProfileLoaded) {
+          if (emailController.text == "" && phoneNumberController.text == "") {
+            emailController.text = state.profile.email;
+            phoneNumberController.text = state.profile.phoneNumber;
+          }
         }
-      }
-    }, builder: (context, state) {
-      if (state is ProfileLoaded) {
-        return Placeholder(
-            color: Colors.transparent,
-            child: RefreshIndicator(
-                child: ListView(
-                  controller: ScrollController(),
-                  scrollDirection: Axis.vertical,
-                  children: [
-                    const Gap(20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: screenWidth,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Card(
-                                margin: EdgeInsets.zero,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(10),
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 36, vertical: 19),
-                                  child: SizedBox(
-                                    width: screenWidth * 0.75,
-                                    child: Column(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 80,
-                                          backgroundImage: NetworkImage(
-                                            "${dotenv.get("WEB_PROTOCOL")}${dotenv.get("WEB_URL")}/storage/img_mhs/${state.profile.photo}",
-                                            headers: const <String, String>{
-                                              "Connection": "Keep-Alive"
-                                            },
-                                          ),
-                                        ),
-                                        const Gap(20),
-                                        SizedBox(
-                                          child: Text(
-                                            state.profile.name,
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          child: Text(
-                                            state.profile.userId,
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                        const Gap(20),
-                                        Column(
-                                          children: [
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                CircularPercentIndicator(
-                                                  radius: 40.0,
-                                                  lineWidth: 10.0,
-                                                  animation: true,
-                                                  percent: double.parse((state
-                                                              .profile
-                                                              .presence /
-                                                          state.profile
-                                                              .totalPresence)
-                                                      .toStringAsFixed(0)),
-                                                  center: Text(
-                                                    "${((state.profile.presence / state.profile.totalPresence) * 100).toStringAsFixed(0)}%",
-                                                    style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 20.0),
-                                                  ),
-                                                  footer: const Text(
-                                                    "Kehadiran",
-                                                    style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 16.0),
-                                                  ),
-                                                  circularStrokeCap:
-                                                      CircularStrokeCap.round,
-                                                  progressColor:
-                                                      const Color(0xFF0072BB),
-                                                ),
-                                                Gap(screenWidth * 0.15),
-                                                CircularPercentIndicator(
-                                                  radius: 40.0,
-                                                  lineWidth: 10.0,
-                                                  animation: true,
-                                                  percent: double.parse((state
-                                                              .profile
-                                                              .assignmentSubmited /
-                                                          state.profile
-                                                              .totalAssignment)
-                                                      .toStringAsFixed(0)),
-                                                  center: Text(
-                                                    "${((state.profile.assignmentSubmited / state.profile.totalAssignment) * 100).toStringAsFixed(0)}%",
-                                                    style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 20.0),
-                                                  ),
-                                                  footer: const Text(
-                                                    "Tugas Selesai",
-                                                    style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 16.0),
-                                                  ),
-                                                  circularStrokeCap:
-                                                      CircularStrokeCap.round,
-                                                  progressColor: Colors.amber,
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        )
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Gap(20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: screenWidth,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Card(
-                                margin: EdgeInsets.zero,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(10),
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 19),
-                                  child: SizedBox(
-                                    width: screenWidth * 0.85,
-                                    child: Column(
-                                      children: [
-                                        const Gap(10),
-                                        const Text(
-                                          "List Mata Kuliah",
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        const Gap(20),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: _getStudentSubjectPresence(
-                                              state.profile
-                                                  .studentSubjectPresences,
-                                              screenWidth),
-                                        )
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Gap(20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: screenWidth,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Card(
-                                margin: EdgeInsets.zero,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(10),
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 19),
-                                  child: SizedBox(
-                                    width: screenWidth * 0.85,
-                                    child: Column(
-                                      children: [
-                                        const Gap(10),
-                                        const Text(
-                                          "Update Profile",
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        const Gap(20),
-                                        CustomTextField(
-                                          label: "Email",
-                                          controller: emailController,
-                                          isPassword: false,
-                                          width: screenWidth * 0.85,
-                                          height: 60,
-                                        ),
-                                        const Gap(20),
-                                        CustomTextField(
-                                          label: "Nomor Telpon",
-                                          controller: phoneNumberController,
-                                          isPassword: false,
-                                          width: screenWidth * 0.85,
-                                          height: 60,
-                                        ),
-                                        const Gap(20),
-                                        ElevatedButton(
-                                          onPressed: () {
-                                            showModalBottomSheet<void>(
-                                              useSafeArea: true,
-                                              showDragHandle: true,
-                                              isScrollControlled: true,
-                                              context: context,
-                                              builder: (BuildContext context) {
-                                                return SizedBox(
-                                                  height: 200,
-                                                  width: double.maxFinite,
-                                                  child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            20),
-                                                    child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      children: [
-                                                        ElevatedButton(
-                                                          onPressed: () async {
-                                                            try {
-                                                              final image =
-                                                                  await ImagePicker()
-                                                                      .pickImage(
-                                                                          source:
-                                                                              ImageSource.camera);
-                                                              if (image ==
-                                                                  null) {
-                                                                return;
-                                                              }
-                                                              final imageTemp =
-                                                                  File(image
-                                                                      .path);
-                                                              setState(() =>
-                                                                  this.image =
-                                                                      imageTemp);
-                                                            } on PlatformException catch (_) {
-                                                              ScaffoldMessenger
-                                                                      .of(context)
-                                                                  .showSnackBar(
-                                                                SnackBar(
-                                                                  content:
-                                                                      const Text(
-                                                                          'Mohon maaf, gagal mengambil gambar'),
-                                                                  duration: const Duration(
-                                                                      milliseconds:
-                                                                          1500),
-                                                                  width:
-                                                                      280.0, // Width of the SnackBar.
-                                                                  padding:
-                                                                      const EdgeInsets
-                                                                          .symmetric(
-                                                                    horizontal:
-                                                                        10.0,
-                                                                    vertical:
-                                                                        8.0, // Inner padding for SnackBar content.
-                                                                  ),
-                                                                  behavior:
-                                                                      SnackBarBehavior
-                                                                          .floating,
-                                                                  shape:
-                                                                      RoundedRectangleBorder(
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                            10.0),
-                                                                  ),
-                                                                ),
-                                                              );
-                                                            }
-                                                            setState(() {
-                                                              Navigator
-                                                                  .maybePop(
-                                                                      context);
-                                                            });
-                                                          },
-                                                          style: ButtonStyle(
-                                                            iconColor:
-                                                                const WidgetStatePropertyAll(
-                                                                    Colors
-                                                                        .orange),
-                                                            splashFactory: NoSplash
-                                                                .splashFactory,
-                                                            backgroundColor:
-                                                                const WidgetStatePropertyAll(
-                                                                    Colors
-                                                                        .transparent),
-                                                            elevation:
-                                                                const WidgetStatePropertyAll(
-                                                                    0),
-                                                            iconSize:
-                                                                WidgetStatePropertyAll(
-                                                                    screenWidth *
-                                                                        0.25),
-                                                            fixedSize:
-                                                                WidgetStatePropertyAll(
-                                                              Size.fromRadius(
-                                                                  screenWidth *
-                                                                      0.24),
-                                                            ),
-                                                            shape:
-                                                                WidgetStatePropertyAll(
-                                                              RoundedRectangleBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            0),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          child: const Column(
-                                                            children: [
-                                                              Icon(
-                                                                  Icons.camera),
-                                                              Text(
-                                                                "Ambil gambar dari kamera",
-                                                                textAlign:
-                                                                    TextAlign
-                                                                        .center,
-                                                                style: TextStyle(
-                                                                    color: Colors
-                                                                        .black),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                        ElevatedButton(
-                                                          onPressed: () async {
-                                                            try {
-                                                              final image =
-                                                                  await ImagePicker()
-                                                                      .pickImage(
-                                                                          source:
-                                                                              ImageSource.gallery);
-                                                              if (image ==
-                                                                  null) {
-                                                                return;
-                                                              }
-                                                              final imageTemp =
-                                                                  File(image
-                                                                      .path);
-                                                              setState(() =>
-                                                                  this.image =
-                                                                      imageTemp);
-                                                            } on PlatformException catch (_) {}
-                                                            setState(() {
-                                                              Navigator
-                                                                  .maybePop(
-                                                                      context);
-                                                            });
-                                                          },
-                                                          style: ButtonStyle(
-                                                            iconColor:
-                                                                const WidgetStatePropertyAll(
-                                                                    Colors.red),
-                                                            splashFactory: NoSplash
-                                                                .splashFactory,
-                                                            backgroundColor:
-                                                                const WidgetStatePropertyAll(
-                                                                    Colors
-                                                                        .transparent),
-                                                            elevation:
-                                                                const WidgetStatePropertyAll(
-                                                                    0),
-                                                            iconSize:
-                                                                WidgetStatePropertyAll(
-                                                                    screenWidth *
-                                                                        0.25),
-                                                            fixedSize:
-                                                                WidgetStatePropertyAll(
-                                                              Size.fromRadius(
-                                                                  screenWidth *
-                                                                      0.24),
-                                                            ),
-                                                            shape:
-                                                                WidgetStatePropertyAll(
-                                                              RoundedRectangleBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            0),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          child: const Column(
-                                                            children: [
-                                                              Icon(Icons.photo),
-                                                              Text(
-                                                                "Ambil gambar dari galeri",
-                                                                textAlign:
-                                                                    TextAlign
-                                                                        .center,
-                                                                style: TextStyle(
-                                                                    color: Colors
-                                                                        .black),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            );
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 5, horizontal: 10),
-                                            elevation: 0,
-                                            fixedSize:
-                                                Size(screenWidth * 0.85, 60),
-                                            surfaceTintColor: Colors.white,
-                                            backgroundColor: Colors.transparent,
-                                            foregroundColor: Colors.black,
-                                            shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                                side: const BorderSide(
-                                                    color: Colors.grey)),
-                                          ),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                            children: [
-                                              const Icon(Icons.image),
-                                              const Gap(5),
-                                              Expanded(
-                                                child: Text(
-                                                  image != null
-                                                      ? image!.path
-                                                      : "Pilih Gambar",
-                                                  textAlign: TextAlign.start,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const Gap(20),
-                                        ElevatedButton(
-                                          onPressed: () async {
-                                            var path = "";
-                                            var filename = "";
-                                            if (image != null) {
-                                              path = image!.path;
-                                              final file =
-                                                  image!.path.split('/');
-                                              filename = file.last;
-                                            }
-                                            BlocProvider.of<ProfileBloc>(
-                                                    context)
-                                                .add(UpdateStudentProfile(
-                                              email: emailController.text,
-                                              phoneNumber:
-                                                  phoneNumberController.text,
-                                              filepath: path,
-                                              filename: filename,
-                                            ));
-                                            image = null;
-                                            emailController.text = "";
-                                            phoneNumberController.text = "";
-
-                                            final academicPeriod = await widget
-                                                .academicPeriodRepository
-                                                .getCurrentAcademicPeriod();
-
-                                            BlocProvider.of<ProfileBloc>(
-                                                    context)
-                                                .add(GetStudentProfile(
-                                                    academicPeriod:
-                                                        academicPeriod));
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            fixedSize:
-                                                Size(screenWidth * 0.85, 50),
-                                            surfaceTintColor: Colors.white,
-                                            backgroundColor:
-                                                const Color(0xFF0072BB),
-                                            foregroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                          ),
-                                          child: const Text('Submit'),
-                                        ),
-                                        const Gap(20),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Gap(20),
-                  ],
-                ),
-                onRefresh: () async {
-                  await Future<void>.delayed(
-                      const Duration(milliseconds: 1000));
-                  setState(() {
-                    widget.academicPeriodRepository
-                        .getCurrentAcademicPeriod()
-                        .then((value) => BlocProvider.of<ProfileBloc>(context)
-                            .add(GetStudentProfile(academicPeriod: value)));
-                  });
-                }));
-      }
-      if (state is ProfileLoadFailed) {
-        return RefreshIndicator(
-          child: const CustomScrollView(
-            slivers: [
-              SliverFillRemaining(
-                child: Column(
-                  children: [
-                    Gap(30),
-                    Text("Mohon maaf, tidak ada data yang dapat ditampilkan"),
-                  ],
-                ),
-              )
-            ],
-          ),
-          onRefresh: () async {
-            await Future<void>.delayed(const Duration(milliseconds: 1000));
-            setState(() {
-              widget.academicPeriodRepository.getCurrentAcademicPeriod().then(
-                  (value) => BlocProvider.of<ProfileBloc>(context)
-                      .add(GetStudentProfile(academicPeriod: value)));
-            });
-          },
-        );
-      }
-      return Center(
-        child: RefreshIndicator(
-            child: const CircularProgressIndicator(),
+      },
+      builder: (context, state) {
+        if (state is ProfileLoaded) {
+          return RefreshIndicator(
             onRefresh: () async {
-              await Future<void>.delayed(const Duration(milliseconds: 1000));
-              setState(() {
-                widget.academicPeriodRepository.getCurrentAcademicPeriod().then(
-                    (value) => BlocProvider.of<ProfileBloc>(context)
-                        .add(GetStudentProfile(academicPeriod: value)));
-              });
-            }),
-      );
-    });
-  }
-}
-
-List<Widget> _getStudentSubjectPresence(
-    List<StudentSubjectPresence> presences, double screenWidth) {
-  var data = List<Widget>.empty(growable: true);
-
-  for (var presence in presences) {
-    data.add(
-      Row(
-        children: [
-          CircularPercentIndicator(
-            radius: 25.0,
-            lineWidth: 6.0,
-            animation: true,
-            percent: double.parse((presence.presence / presence.totalPresence)
-                .toStringAsFixed(0)),
-            center: Text(
-              "${((presence.presence / presence.totalPresence) * 100).toStringAsFixed(0)}%",
-              style:
-                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.0),
+              _loadProfile();
+            },
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              children: [
+                _buildHeader(state.profile),
+                const Gap(32),
+                _buildStats(state.profile),
+                const Gap(32),
+                _buildSubjectList(state.profile.studentSubjectPresences),
+              ],
             ),
-            circularStrokeCap: CircularStrokeCap.round,
-            progressColor: const Color(0xFF0072BB),
-          ),
-          const Gap(15),
-          Column(
-            children: [
-              Row(
-                children: [
-                  SizedBox(
-                    width: screenWidth * 0.55,
-                    child: Text(
-                      presence.subjectName,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const Gap(5),
-                  Text(
-                    "[${presence.subjectClass}]",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+          );
+        }
+
+        if (state is ProfileLoadFailed) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded, size: 48, color: Colors.red),
+                const Gap(16),
+                const Text("Gagal memuat profil mahasiswa"),
+                TextButton(
+                  onPressed: _loadProfile,
+                  child: const Text("Coba Lagi"),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+  }
+
+  Widget _buildHeader(Profile profile) {
+    // Build the base URL correctly
+    String webUrl = dotenv.get("WEB_URL");
+    String webProtocol = dotenv.get("WEB_PROTOCOL");
+    String baseUrl = webUrl.startsWith("http") ? webUrl : "$webProtocol$webUrl";
+    String photoUrl = "$baseUrl/storage/img_mhs/${profile.photo}";
+
+    bool hasPhoto = profile.photo.isNotEmpty && 
+                   profile.photo != "null" && 
+                   profile.photo != "undefined" &&
+                   profile.photo != "default.png";
+
+    return Column(
+      children: [
+        Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
                 ],
-              )
-            ],
+              ),
+              child: CircleAvatar(
+                radius: 70,
+                backgroundColor: placeholderColor,
+                child: ClipOval(
+                  child: hasPhoto
+                      ? Image.network(
+                          photoUrl,
+                          width: 140,
+                          height: 140,
+                          fit: BoxFit.cover,
+                          headers: const {"Connection": "Keep-Alive"},
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.person,
+                                size: 80, color: Colors.white);
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes !=
+                                        null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                                color: Colors.white.withOpacity(0.5),
+                              ),
+                            );
+                          },
+                        )
+                      : const Icon(Icons.person, size: 80, color: Colors.white),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: GestureDetector(
+                onTap: () => _showEditProfileModal(profile),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                  ),
+                  child: const Icon(Icons.edit_rounded, color: Colors.white, size: 20),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const Gap(24),
+        Text(
+          profile.name,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            color: primaryColor,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const Gap(4),
+        Text(
+          profile.userId,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStats(Profile profile) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildStatCard(
+            title: "Kehadiran",
+            percent: profile.totalPresence > 0 ? profile.presence / profile.totalPresence : 0.0,
+            color: Colors.blue.shade700,
+          ),
+        ),
+        const Gap(16),
+        Expanded(
+          child: _buildStatCard(
+            title: "Tugas Selesai",
+            percent: profile.totalAssignment > 0 ? profile.assignmentSubmited / profile.totalAssignment : 0.0,
+            color: Colors.orange.shade700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard({required String title, required double percent, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          CircularPercentIndicator(
+            radius: 40,
+            lineWidth: 8,
+            percent: percent,
+            animation: true,
+            circularStrokeCap: CircularStrokeCap.round,
+            progressColor: color,
+            backgroundColor: color.withOpacity(0.1),
+            center: Text(
+              "${(percent * 100).toStringAsFixed(0)}%",
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+            ),
+          ),
+          const Gap(12),
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+              color: Colors.grey.shade700,
+            ),
           ),
         ],
       ),
     );
-    data.add(
-      const Gap(10),
+  }
+
+  Widget _buildSubjectList(List<StudentSubjectPresence> presences) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(
+            "Riwayat Kehadiran",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: primaryColor,
+            ),
+          ),
+        ),
+        const Gap(16),
+        ...presences.map((p) => _buildSubjectItem(p)),
+      ],
     );
   }
 
-  return data;
+  Widget _buildSubjectItem(StudentSubjectPresence presence) {
+    final double percent = presence.totalPresence > 0 ? presence.presence / presence.totalPresence : 0.0;
+    
+    return GestureDetector(
+      onTap: () {
+        // Find the full subject object
+        final subject = _fullSubjects.firstWhere(
+          (s) => s.subjectId == presence.subjectId && s.subjectClass == presence.subjectClass,
+          orElse: () => Subject(
+            subjectId: presence.subjectId,
+            subjectName: presence.subjectName,
+            subjectClass: presence.subjectClass,
+            activityMasterId: presence.activityMasterId,
+            academicPeriodId: "", 
+            lecturerId: "", 
+            lecturerName: "", 
+            majorId: "", 
+            majorName: "", 
+            subjectCredits: 0, 
+            subjectSchedule: [], 
+            totalStudent: 0,
+          ),
+        );
+        
+        // Set tab to Presensi (Index 1) and navigate
+        context.read<PageIndexCubit>().pageClicked(1);
+        Navigator.pushNamed(context, "/student/subject", arguments: subject);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            CircularPercentIndicator(
+              radius: 24,
+              lineWidth: 5,
+              percent: percent,
+              animation: true,
+              circularStrokeCap: CircularStrokeCap.round,
+              progressColor: primaryColor,
+              backgroundColor: primaryColor.withOpacity(0.1),
+              center: Text(
+                "${(percent * 100).toStringAsFixed(0)}%",
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 11),
+              ),
+            ),
+            const Gap(16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    presence.subjectName,
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    "Kelas ${presence.subjectClass}",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditProfileModal(Profile profile) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              left: 24,
+              right: 24,
+              top: 24,
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const Gap(24),
+                const Text(
+                  "Update Profile",
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+                ),
+                const Gap(8),
+                Text(
+                  "Perbarui informasi kontak dan foto profil Anda",
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+                const Gap(32),
+                
+                // Photo Picker
+                Center(
+                  child: Column(
+                    children: [
+                      GestureDetector(
+                        onTap: () async {
+                          final picker = ImagePicker();
+                          final pickedFile = await showModalBottomSheet<XFile>(
+                            context: context,
+                            builder: (context) => _buildImageSourcePicker(context, picker),
+                          );
+                          
+                          if (pickedFile != null) {
+                            setState(() => image = File(pickedFile.path));
+                            setModalState(() {}); // Refresh modal UI
+                          }
+                        },
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.grey.shade100,
+                              backgroundImage: image != null ? FileImage(image!) : null,
+                              child: image == null ? const Icon(Icons.add_a_photo_rounded, size: 32, color: Colors.grey) : null,
+                            ),
+                            if (image != null)
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() => image = null);
+                                    setModalState(() {});
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                    child: const Icon(Icons.close, size: 16, color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const Gap(12),
+                      const Text("Klik untuk ganti foto", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                
+                const Gap(32),
+                CustomTextField(
+                  label: "Email",
+                  controller: emailController,
+                  isPassword: false,
+                  width: double.infinity,
+                  height: 60,
+                ),
+                const Gap(20),
+                CustomTextField(
+                  label: "Nomor Telpon",
+                  controller: phoneNumberController,
+                  isPassword: false,
+                  width: double.infinity,
+                  height: 60,
+                ),
+                const Gap(32),
+                
+                // Submit Button
+                ElevatedButton(
+                  onPressed: () async {
+                    var path = "";
+                    var filename = "";
+                    if (image != null) {
+                      path = image!.path;
+                      filename = image!.path.split('/').last;
+                    }
+                    
+                    context.read<ProfileBloc>().add(UpdateStudentProfile(
+                      email: emailController.text,
+                      phoneNumber: phoneNumberController.text,
+                      filepath: path,
+                      filename: filename,
+                    ));
+                    
+                    Navigator.pop(context);
+                    
+                    // Show success snackbar (simplified)
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Profil berhasil diperbarui!")),
+                    );
+                    
+                    // Reload profile
+                    final academicPeriod = await widget.academicPeriodRepository.getCurrentAcademicPeriod();
+                    if (mounted) {
+                      context.read<ProfileBloc>().add(GetStudentProfile(academicPeriod: academicPeriod));
+                    }
+                    
+                    image = null;
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  child: const Text("Terapkan Perubahan", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildImageSourcePicker(BuildContext context, ImagePicker picker) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text("Pilih Sumber Gambar", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Gap(24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildSourceButton(
+                icon: Icons.camera_alt_rounded,
+                label: "Kamera",
+                color: Colors.orange,
+                onTap: () async => Navigator.pop(context, await picker.pickImage(source: ImageSource.camera)),
+              ),
+              _buildSourceButton(
+                icon: Icons.photo_library_rounded,
+                label: "Galeri",
+                color: Colors.blue,
+                onTap: () async => Navigator.pop(context, await picker.pickImage(source: ImageSource.gallery)),
+              ),
+            ],
+          ),
+          const Gap(16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSourceButton({required IconData icon, required String label, required Color color, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        width: 120,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 30),
+            ),
+            const Gap(8),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
 }
