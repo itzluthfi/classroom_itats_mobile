@@ -510,7 +510,7 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                       const Gap(8),
                       Expanded(
                         child: Text(
-                          "Tenggat: ${DateFormat("d MMM y, HH:mm").format(data.dueDate)}",
+                          "Tenggat Waktu: ${DateFormat("d MMM y, HH:mm").format(data.dueDate)}",
                           style: TextStyle(
                             fontSize: 12,
                             color: isLate && !sudahSubmit
@@ -539,22 +539,22 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                     Row(
                       children: [
                         Icon(
-                          Icons.error_outline_rounded,
+                          Icons.block_rounded, // Better icon for cut-off
                           size: 14,
                           color: isExpired && !sudahSubmit
                               ? const Color(0xFFEF4444)
-                              : const Color(0xFF64748B),
+                              : const Color(0xFFF97316), // Orange for warning
                         ),
                         const Gap(8),
                         Expanded(
                           child: Text(
-                            "Batas Terlambat: ${DateFormat("d MMM y, HH:mm").format(data.endTime!)}",
+                            "Batas Pengumpulan: ${DateFormat("d MMM y, HH:mm").format(data.endTime!)}",
                             style: TextStyle(
                               fontSize: 12,
                               color: isExpired && !sudahSubmit
                                   ? const Color(0xFFEF4444)
-                                  : const Color(0xFF475569),
-                              fontWeight: FontWeight.w600,
+                                  : const Color(0xFFF97316),
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
