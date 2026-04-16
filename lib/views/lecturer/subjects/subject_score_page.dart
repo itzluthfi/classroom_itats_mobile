@@ -16,21 +16,20 @@ class LecturerSubjectScorePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double? scrolledUnderElevation;
-
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         title: Image.asset(
           "assets/application_images/Logo_Classroom_Rect-no_bg-rev1.png",
           height: 40,
           width: 200,
           fit: BoxFit.fill,
         ),
-        scrolledUnderElevation: scrolledUnderElevation,
-        shadowColor: null,
         actions: [
-
           IconButton(
             onPressed: () {
               BlocProvider.of<AuthBloc>(context).add(LoggedOut());

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:classroom_itats_mobile/models/lecture.dart';
+import 'package:classroom_itats_mobile/models/week.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -142,6 +143,51 @@ class LectureRepository {
       return response.statusCode ?? 404;
     } catch (e) {
       return 500;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getLectureRps(String mkId, String weekId) async {
+    try {
+      final value = await storage.read(key: "token");
+      Response response = await _dio.get(
+        "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/lecturers/colleges/rps?mkid=$mkId&weekid=$weekId",
+        options: Options(
+          contentType: "application/json",
+          headers: {"token": value},
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        return response.data["data"] as Map<String, dynamic>;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<Week>> getTeamWeeks(String academicPeriodId, String mkId, String subjectClass) async {
+    try {
+      final value = await storage.read(key: "token");
+      Response response = await _dio.post(
+        "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/lecturers/colleges/team-weeks",
+        data: {
+          "academic_period_id": academicPeriodId,
+          "mkid": mkId,
+          "kelas": subjectClass,
+        },
+        options: Options(
+          contentType: "application/json",
+          headers: {"token": value},
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final decodedData = response.data["data"] as List;
+        return decodedData.map((data) => Week.fromJson(data)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
     }
   }
 

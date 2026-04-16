@@ -31,28 +31,29 @@ class Subject {
   });
 
   factory Subject.fromJson(Map<String, dynamic> json) => Subject(
-        subjectClass: json["subject_class"],
-        subjectCredits: json["subject_credit"],
-        subjectId: json["subject_id"],
-        majorId: json["major_id"],
-        majorName: json["major_name"],
-        academicPeriodId: json["academic_period_id"],
-        lecturerId: json["lecturer_id"],
-        subjectName: json["subject_name"],
+        subjectClass: json["subject_class"] ?? "",
+        subjectCredits: json["subject_credit"] ?? 0,
+        subjectId: json["subject_id"] ?? "",
+        majorId: json["major_id"] ?? "",
+        majorName: json["major_name"] ?? "",
+        academicPeriodId: json["academic_period_id"] ?? "",
+        lecturerId: json["lecturer_id"] ?? "",
+        subjectName: json["subject_name"] ?? "",
         totalStudent: json["total_student"] ?? 0,
         activityMasterId: json["activity_master_id"] ?? "",
         lecturerName: json["lecturer_name"] ?? "",
         subjectSchedule: json["subject_schedules"] != null
             ? (json["subject_schedules"] as List)
-                .map((e) => Map<String, dynamic>.from(e))
+                .map((e) => Map<String, dynamic>.from(e as Map))
                 .toList()
-            : List.of([
-                Map<String, dynamic>.of({
-                  "day": json["day"],
-                  "time_start": json["time_start"],
-                  "time_end": json["time_end"]
-                })
-              ]),
+            : <Map<String, dynamic>>[
+                {
+                  "day": json["day"] ?? "",
+                  "time_start": json["time_start"] ?? "",
+                  "time_end": json["time_end"] ?? "",
+                  "subject_type": json["subject_type"] ?? "",
+                }
+              ],
       );
 }
 

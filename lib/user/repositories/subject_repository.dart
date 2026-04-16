@@ -281,6 +281,8 @@ class SubjectRepository {
       String academicPeriodId, String subjectId, String subjectClass) async {
     final value = await storage.read(key: "token");
 
+    print("DEBUG getStudentScore: academicPeriod=$academicPeriodId, subjectId=$subjectId, class=$subjectClass");
+
     Response response = await _dio.post(
       "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/lecturers/studentScores",
       data: {
@@ -294,10 +296,15 @@ class SubjectRepository {
       ),
     );
 
+    print("DEBUG getStudentScore: status=${response.statusCode}");
+    print("DEBUG getStudentScore: data=${response.data}");
+
     final decodedData = response.data["data"] as List;
 
     final studentScore =
         decodedData.map((data) => StudentScore.fromJson(data)).toList();
+
+    print("DEBUG getStudentScore: parsed ${studentScore.length} students");
 
     return studentScore;
   }

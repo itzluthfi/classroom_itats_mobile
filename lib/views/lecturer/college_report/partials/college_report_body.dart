@@ -32,24 +32,24 @@ class _LecturerCollegeReportBodyState extends State<LecturerCollegeReportBody> {
   }
 
   _getHomeSubject() async {
+    if (!mounted) return;
     var academicPeriod =
         await widget.academicPeriodRepository.getCurrentAcademicPeriod();
     var major = await widget.majorRepository.getlecturerMajor();
+    if (!mounted) return;
     if (academicPeriod == "" ||
         await widget.academicPeriodRepository.getActiveAcademicPeriod() ==
             academicPeriod) {
-      setState(() {
-        BlocProvider.of<SubjectBloc>(context)
-            .add(GetSubjectReport(context: context));
-      });
+      if (!mounted) return;
+      BlocProvider.of<SubjectBloc>(context)
+          .add(GetSubjectReport(context: context));
     } else {
-      setState(() {
-        BlocProvider.of<SubjectBloc>(context).add(FilterButtonPressedReport(
-          academicPeriod: academicPeriod,
-          major: major,
-          context: context,
-        ));
-      });
+      if (!mounted) return;
+      BlocProvider.of<SubjectBloc>(context).add(FilterButtonPressedReport(
+        academicPeriod: academicPeriod,
+        major: major,
+        context: context,
+      ));
     }
   }
 
@@ -63,12 +63,12 @@ class _LecturerCollegeReportBodyState extends State<LecturerCollegeReportBody> {
         if (state is SubjectLoadFailed) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Load Subjects Failed'),
+              content: const Text('Gagal memuat data pelaporan'),
               duration: const Duration(milliseconds: 1500),
-              width: 280.0, // Width of the SnackBar.
+              width: 280.0,
               padding: const EdgeInsets.symmetric(
                 horizontal: 10.0,
-                vertical: 8.0, // Inner padding for SnackBar content.
+                vertical: 8.0,
               ),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
