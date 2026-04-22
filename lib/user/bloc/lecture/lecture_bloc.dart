@@ -218,6 +218,7 @@ class LectureBloc extends Bloc<LectureEvent, LectureState> {
           event.materialRealization,
           event.presenceLimit,
           event.collegeType,
+          event.linkMeet,
         );
 
         if (status == 200) {

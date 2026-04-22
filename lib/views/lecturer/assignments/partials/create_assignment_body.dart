@@ -33,10 +33,18 @@ class _LecturerCreateAssignmentBodyState
   var dateTextEditingController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Hanya panggil sekali saat halaman pertama dibuka
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      BlocProvider.of<AssignmentBloc>(context).add(GetCreateAssignment(
+          academicPeriodId: widget.academicPeriodId, major: widget.major));
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width * 0.9;
-    BlocProvider.of<AssignmentBloc>(context).add(GetCreateAssignment(
-        academicPeriodId: widget.academicPeriodId, major: widget.major));
 
     return BlocConsumer<AssignmentBloc, AssignmentState>(
       listener: (context, state) {},
