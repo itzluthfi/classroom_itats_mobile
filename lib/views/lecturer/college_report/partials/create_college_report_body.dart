@@ -4,11 +4,14 @@ import 'package:classroom_itats_mobile/models/week.dart';
 import 'package:classroom_itats_mobile/user/bloc/lecture/lecture_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/study_material/study_material_bloc.dart';
 import 'package:classroom_itats_mobile/user/repositories/lecture_repository.dart';
+import 'package:classroom_itats_mobile/user/repositories/microsoft_repository.dart';
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:multi_dropdown/multi_dropdown.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LecturerCreateCollegeReportBody extends StatefulWidget {
   final SubjectReport subject;
@@ -36,6 +39,13 @@ class _LecturerCreateCollegeReportBodyState
   String? _capaianPembelajaran;
   String? _rencanaPembelajaran;
   bool _isLoadingRps = false;
+
+  // MS Teams integration
+  int _selectedCollegeType = 1;
+  final _linkMeetController = TextEditingController();
+  bool _isCreatingMeeting = false;
+  final _msRepo = MicrosoftRepository();
+  AppLinks? _appLinks;
 
   Future<void> _fetchRpsDetail(String weekId) async {
     setState(() {
@@ -78,6 +88,119 @@ class _LecturerCreateCollegeReportBodyState
           .toSet();
     }
     _fetchTeamWeeks();
+    _initDeepLinkListener();
+  }
+
+  /// Mendengarkan deep link callback dari browser setelah OAuth
+  void _initDeepLinkListener() {
+    _appLinks = AppLinks();
+    _appLinks!.uriLinkStream.listen((uri) async {
+      if (uri.scheme == 'classroom-itats' &&
+          uri.host == 'auth' &&
+          uri.queryParameters.containsKey('code')) {
+        final code = uri.queryParameters['code']!;
+        try {
+          // Kirim code ke backend untuk ditukar token
+          await _msRepo.handleCallback(code);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Akun Microsoft berhasil dihubungkan!'),
+                backgroundColor: Color(0xFF16A34A),
+              ),
+            );
+            // Setelah terhubung, langsung buat meeting
+            await _createTeamsMeeting();
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Gagal menghubungkan akun: $e'),
+                backgroundColor: const Color(0xFFEF4444),
+              ),
+            );
+          }
+        }
+      }
+    });
+  }
+
+  /// Membuat meeting MS Teams (dengan auto-login jika belum terhubung)
+  Future<void> _createTeamsMeeting() async {
+    if (!mounted) return;
+    setState(() => _isCreatingMeeting = true);
+
+    try {
+      // Cek apakah sudah terhubung ke Microsoft
+      final isLinked = await _msRepo.checkLinkedStatus();
+
+      if (!isLinked) {
+        // Belum terhubung — arahkan ke halaman OAuth Microsoft
+        final result = await _msRepo.getAuthUrl();
+        final authUrl = result['auth_url'] as String;
+        final uri = Uri.parse(authUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+        // Deep link listener akan menangkap callback dan memanggil _createTeamsMeeting() lagi
+        return;
+      }
+
+      // Sudah terhubung — langsung buat meeting
+      final subjectName = widget.subject.subjectName;
+      final now = DateTime.now();
+      // Waktu meeting default: sekarang + 30 menit selama 100 menit
+      final start = now.add(const Duration(minutes: 30));
+      final end = start.add(const Duration(minutes: 100));
+
+      final joinUrl = await _msRepo.createMeeting(
+        subject: 'Perkuliahan $subjectName - ${widget.subject.subjectClass}',
+        startTime: start.toUtc().toIso8601String(),
+        endTime: end.toUtc().toIso8601String(),
+      );
+
+      if (mounted) {
+        setState(() {
+          _linkMeetController.text = joinUrl;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 16),
+              SizedBox(width: 8),
+              Text('Link meeting berhasil dibuat!'),
+            ]),
+            backgroundColor: Color(0xFF16A34A),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        // Jika error karena perlu login ulang
+        final needsReauth = e.toString().contains('need_auth') ||
+            e.toString().contains('login ulang');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              needsReauth ? 'Sesi berakhir, silakan hubungkan ulang akun Microsoft.' : 'Gagal membuat meeting: $e',
+            ),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+        if (needsReauth) {
+          // Reset status & minta login ulang
+          final result = await _msRepo.getAuthUrl();
+          final authUrl = result['auth_url'] as String;
+          final uri = Uri.parse(authUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isCreatingMeeting = false);
+    }
   }
 
   Future<void> _fetchTeamWeeks() async {
@@ -104,6 +227,7 @@ class _LecturerCreateCollegeReportBodyState
     presenceLimitTextEditingController.dispose();
     collegeTypeEditingController.dispose();
     materialRealizationTextEditingController.dispose();
+    _linkMeetController.dispose();
     super.dispose();
   }
 
@@ -612,10 +736,6 @@ class _LecturerCreateCollegeReportBodyState
                               label: const Text("Jenis Perkuliahan"),
                               initialSelection: int.tryParse(
                                   collegeTypeEditingController.text),
-                              onSelected: (value) {
-                                collegeTypeEditingController.text =
-                                    value.toString();
-                              },
                               inputDecorationTheme: InputDecorationTheme(
                                 filled: true,
                                 fillColor: Colors.grey.shade50,
@@ -651,9 +771,117 @@ class _LecturerCreateCollegeReportBodyState
                               ),
                               dropdownMenuEntries: const [
                                 DropdownMenuEntry(value: 1, label: "Offline (Tatap Muka)"),
-                                // DropdownMenuEntry(value: 2, label: "Online (Hybrid)"), // Temporarily hidden for MS Teams SSO handling, fallback to dashboard
+                                DropdownMenuEntry(value: 2, label: "Hybrid (Online)"),
                               ],
+                              onSelected: (value) {
+                                collegeTypeEditingController.text =
+                                    (value ?? 1).toString();
+                                setState(() {
+                                  _selectedCollegeType = value ?? 1;
+                                });
+                              },
                             ),
+
+                            // ── Field Link Meeting (hanya jika Hybrid) ──────────
+                            if (_selectedCollegeType == 2) ...[
+                              const Gap(16),
+                              _sectionLabel("Link Meeting"),
+                              const Gap(8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _linkMeetController,
+                                      decoration: InputDecoration(
+                                        hintText: 'https://teams.microsoft.com/...',
+                                        hintStyle: TextStyle(
+                                            color: Colors.grey.shade400,
+                                            fontSize: 13),
+                                        prefixIcon: const Icon(
+                                            Icons.video_call_outlined,
+                                            size: 18,
+                                            color: Color(0xFF0078D4)),
+                                        filled: true,
+                                        fillColor: Colors.grey.shade50,
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                              color: Colors.grey.shade200),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                              color: Colors.grey.shade200),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: const BorderSide(
+                                              color: Color(0xFF0078D4),
+                                              width: 1.5),
+                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: 16, vertical: 14),
+                                      ),
+                                      validator: (_selectedCollegeType == 2)
+                                          ? (v) => (v == null || v.isEmpty)
+                                              ? 'Link meeting wajib diisi untuk kelas Hybrid'
+                                              : null
+                                          : null,
+                                    ),
+                                  ),
+                                  const Gap(10),
+                                  // Tombol Buat via Teams
+                                  SizedBox(
+                                    height: 52,
+                                    child: ElevatedButton(
+                                      onPressed: _isCreatingMeeting
+                                          ? null
+                                          : _createTeamsMeeting,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            const Color(0xFF0078D4),
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 14),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12)),
+                                      ),
+                                      child: _isCreatingMeeting
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : const Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                    Icons.video_call_rounded,
+                                                    size: 20),
+                                                SizedBox(height: 2),
+                                                Text('Teams',
+                                                    style: TextStyle(
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.w700)),
+                                              ],
+                                            ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                             const Gap(16),
 
                             // Realisasi Materi
@@ -771,10 +999,11 @@ class _LecturerCreateCollegeReportBodyState
                                                 .text,
                                         presenceLimit:
                                             "${presenceLimitTextEditingController.text.replaceAll(" ", "T")}Z",
-                                        collegeType: int.tryParse(
+                                         collegeType: int.tryParse(
                                                 collegeTypeEditingController
                                                     .text) ??
                                             1,
+                                        linkMeet: _linkMeetController.text,
                                       ));
                                       multiSelectController.clearAll();
                                       collegeDateTextEditingController.text =

@@ -256,6 +256,7 @@ class LectureRepository {
     String materialRealization,
     String presenceLimit,
     int collegeType,
+    String linkMeet,
   ) async {
     final value = await storage.read(key: "token");
 
@@ -279,7 +280,8 @@ class LectureRepository {
           "entry_time": entryTime,
           "material_realization": materialRealization,
           "presence_limit": presenceLimit,
-          "college_type": collegeType
+          "college_type": collegeType,
+          "link_meet": linkMeet,
         },
         "material": material,
       },
