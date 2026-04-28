@@ -1,4 +1,5 @@
 import 'package:classroom_itats_mobile/models/study_material.dart';
+import 'package:classroom_itats_mobile/core/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -6,7 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class StudyMaterialRepository {
   final storage = const FlutterSecureStorage(
       aOptions: AndroidOptions(encryptedSharedPreferences: true));
-  final _dio = Dio();
+  final _dio = ApiClient.instance.dio;
 
   Future<List<StudyMaterial>> getStudyMaterial(String academicPeriodId,
       String subjectId, String subjectClass, int weekId) async {

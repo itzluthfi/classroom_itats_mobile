@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:classroom_itats_mobile/models/assignment.dart';
 import 'package:classroom_itats_mobile/models/score_type.dart';
 import 'package:classroom_itats_mobile/models/week.dart';
+import 'package:classroom_itats_mobile/core/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/services.dart';
@@ -13,7 +14,7 @@ import 'package:path_provider/path_provider.dart';
 class AssignmentRepository {
   final storage = const FlutterSecureStorage(
       aOptions: AndroidOptions(encryptedSharedPreferences: true));
-  final _dio = Dio();
+  final _dio = ApiClient.instance.dio;
 
   Future<List<Assignment>> getActiveAssignments(String period) async {
     final value = await storage.read(key: "token");
