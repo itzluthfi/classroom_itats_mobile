@@ -1,3 +1,4 @@
+import 'package:classroom_itats_mobile/core/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -5,7 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class MicrosoftRepository {
   final _storage = const FlutterSecureStorage(
       aOptions: AndroidOptions(encryptedSharedPreferences: true));
-  final _dio = Dio();
+  final _dio = ApiClient.instance.dio;
 
   String get _base =>
       '${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/lecturers/microsoft';

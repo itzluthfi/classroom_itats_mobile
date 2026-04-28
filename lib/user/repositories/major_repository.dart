@@ -1,4 +1,5 @@
 import 'package:classroom_itats_mobile/models/major.dart';
+import 'package:classroom_itats_mobile/core/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -7,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class MajorRepository {
   final storage = const FlutterSecureStorage(
       aOptions: AndroidOptions(encryptedSharedPreferences: true));
-  final _dio = Dio();
+  final _dio = ApiClient.instance.dio;
 
   Future<List<Major>> getLecturerMajors(String period) async {
     final value = await storage.read(key: "token");

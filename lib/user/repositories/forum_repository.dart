@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:classroom_itats_mobile/models/forum.dart';
+import 'package:classroom_itats_mobile/core/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -9,7 +10,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class ForumRepository {
   final storage = const FlutterSecureStorage(
       aOptions: AndroidOptions(encryptedSharedPreferences: true));
-  final _dio = Dio();
+  final _dio = ApiClient.instance.dio;
 
   Future<List<Announcement>> forum(String masterActivityId) async {
     final value = await storage.read(key: "token");
