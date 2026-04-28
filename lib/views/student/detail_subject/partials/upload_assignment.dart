@@ -141,6 +141,111 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
               ),
               const Gap(16),
 
+              // ── SECTION: Judul & Instruksi Dosen ──
+              if (widget.assignment != null) ...[ 
+                // Judul Tugas
+                Text(
+                  widget.assignment!.assignmentTitle,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const Gap(4),
+                Text(
+                  widget.assignment!.subjectName,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF3B82F6),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Gap(12),
+
+                // Instruksi / Deskripsi
+                if (widget.assignment!.description.isNotEmpty || widget.assignment!.fileLink.isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFBEB),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFDE68A)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.description_outlined,
+                                size: 14, color: Color(0xFFD97706)),
+                            Gap(6),
+                            Text(
+                              "Instruksi / Soal",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFFD97706),
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (widget.assignment!.description.isNotEmpty) ...[
+                          const Gap(8),
+                          Text(
+                            widget.assignment!.description,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF1C1C1C),
+                              height: 1.55,
+                            ),
+                          ),
+                        ],
+                        if (widget.assignment!.fileLink.isNotEmpty) ...[
+                          const Gap(10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD97706).withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: const Color(0xFFD97706).withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.attach_file_rounded,
+                                    size: 14, color: Color(0xFFD97706)),
+                                const Gap(6),
+                                Expanded(
+                                  child: Text(
+                                    widget.assignment!.fileName.isNotEmpty
+                                        ? widget.assignment!.fileName
+                                        : widget.assignment!.fileLink
+                                            .split('/')
+                                            .last,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFFD97706),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const Gap(16),
+                ],
+              ],
+
               // ── SECTION: Informasi Batas Waktu ──
               if (widget.assignment != null) ...[
                 Builder(

@@ -24,252 +24,388 @@ class _LecturerSubjectScoreBodyState extends State<LecturerSubjectScoreBody> {
   @override
   void initState() {
     super.initState();
-
     _getSubjectLecturer();
   }
 
   _getSubjectLecturer() async {
+    if (!mounted) return;
     widget.academicPeriodRepository.getCurrentAcademicPeriod().then(
-          (ac) => widget.majorRepository
-              .getlecturerMajor()
-              .then((value) => BlocProvider.of<ListSubjectBloc>(context).add(
-                    GetLecturerSubject(academicPeriod: ac, major: value),
-                  )),
-        );
+      (ac) {
+        if (!mounted) return;
+        widget.majorRepository.getlecturerMajor().then((value) {
+          if (!mounted) return;
+          BlocProvider.of<ListSubjectBloc>(context).add(
+            GetLecturerSubject(academicPeriod: ac, major: value),
+          );
+        });
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width * 0.95;
-    double screenHeight = MediaQuery.of(context).size.height * 0.95;
-
     return BlocConsumer<ListSubjectBloc, ListSubjectState>(
       listener: (context, state) {},
       builder: (context, state) {
-        return Placeholder(
-          color: Colors.transparent,
+        return Container(
+          color: Colors.white,
           child: RefreshIndicator(
-            child: CustomScrollView(
-              slivers: [
-                SliverFillRemaining(
-                  child: ListView(
-                    controller: ScrollController(),
-                    scrollDirection: Axis.vertical,
-                    children: [
-                      const Gap(20),
-                      const Column(
-                        children: [
-                          Text(
-                            "Daftar Mata Kuliah",
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        ],
-                      ),
-                      const Gap(20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: _getSubject(
-                            context, state, screenWidth, screenHeight),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            color: const Color(0xFF1E5AD6),
             onRefresh: () async {
-              await Future<void>.delayed(const Duration(milliseconds: 1000));
-
+              await Future<void>.delayed(const Duration(milliseconds: 800));
               setState(() {
-                widget.academicPeriodRepository.getCurrentAcademicPeriod().then(
+                widget.academicPeriodRepository
+                    .getCurrentAcademicPeriod()
+                    .then(
                       (ac) => widget.majorRepository.getlecturerMajor().then(
-                          (value) =>
-                              BlocProvider.of<ListSubjectBloc>(context).add(
-                                GetLecturerSubject(
-                                    academicPeriod: ac, major: value),
-                              )),
+                            (value) =>
+                                BlocProvider.of<ListSubjectBloc>(context).add(
+                              GetLecturerSubject(
+                                  academicPeriod: ac, major: value),
+                            ),
+                          ),
                     );
               });
             },
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                // Header section
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Buku Nilai",
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const Gap(4),
+                        Text(
+                          "Pilih mata kuliah untuk mengelola nilai mahasiswa",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        if (state is ListSubjectLoaded) ...[
+                          const Gap(12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEEF2FF),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              "${state.subjects.length} Mata Kuliah",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF4338CA),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                // List content
+                _buildContent(context, state),
+              ],
+            ),
           ),
         );
       },
     );
   }
-}
 
-List<Widget> _getSubject(
-    context, state, double screenWidth, double screenHeight) {
-  if (state is ListSubjectLoading) {
-    return [
-      const Center(
-        child: CircularProgressIndicator(),
-      ),
-    ];
-  } else if (state is ListSubjectLoaded) {
-    return [
-      Column(
-        children: _subject(context, state.subjects, screenWidth),
-      )
-    ];
-  } else {
-    return [
-      SizedBox(
-        width: screenWidth,
-        height: screenHeight * 0.6,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: const [
-            Icon(Icons.menu_book_rounded, size: 80, color: Colors.grey),
-            Gap(16),
-            Text(
-              "Mohon maaf, tidak ada mata kuliah yang dapat ditampilkan",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-          ],
+  Widget _buildContent(BuildContext context, ListSubjectState state) {
+    if (state is ListSubjectLoading) {
+      return const SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                color: Color(0xFF1E5AD6),
+                strokeWidth: 3,
+              ),
+              Gap(16),
+              Text(
+                "Memuat mata kuliah...",
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+            ],
+          ),
         ),
-      )
-    ];
+      );
+    } else if (state is ListSubjectLoaded && state.subjects.isNotEmpty) {
+      return SliverPadding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) =>
+                _SubjectScoreCard(subject: state.subjects[index]),
+            childCount: state.subjects.length,
+          ),
+        ),
+      );
+    } else {
+      return SliverFillRemaining(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.menu_book_rounded,
+                    size: 60,
+                    color: Colors.grey.shade400,
+                  ),
+                ),
+                const Gap(24),
+                const Text(
+                  "Tidak Ada Mata Kuliah",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF334155),
+                  ),
+                ),
+                const Gap(8),
+                Text(
+                  "Belum ada mata kuliah yang tersedia\npada semester ini.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade500,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 }
 
-List<Widget> _subject(context, List<Subject> subjects, double screenWidth) {
-  List<Widget> scores = List.empty(growable: true);
+class _SubjectScoreCard extends StatelessWidget {
+  final Subject subject;
+  const _SubjectScoreCard({required this.subject});
 
-  for (var subject in subjects) {
-    scores.add(
-      Row(
-        children: [
-          SizedBox(
-            width: screenWidth,
-            child: Container(
+  @override
+  Widget build(BuildContext context) {
+    final schedules = subject.subjectSchedule;
+    final subjectType = schedules.isNotEmpty
+        ? (schedules[0]["subject_type"] as String? ?? '').isEmpty
+            ? '-'
+            : schedules[0]["subject_type"] as String
+        : '-';
+
+    final Color typeColor = subjectType == 'T'
+        ? const Color(0xFF0EA5E9)
+        : subjectType == 'P'
+            ? const Color(0xFF10B981)
+            : const Color(0xFF8B5CF6);
+
+    final String typeLabel = subjectType == 'T'
+        ? 'Teori'
+        : subjectType == 'P'
+            ? 'Praktikum'
+            : subjectType;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top accent bar
+            Container(
+              height: 4,
               decoration: const BoxDecoration(
-                borderRadius: BorderRadius.all(
-                  Radius.circular(10),
+                gradient: LinearGradient(
+                  colors: [Color(0xFF1E5AD6), Color(0xFF60A5FA)],
                 ),
               ),
-              width: screenWidth,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Card(
-                    surfaceTintColor: Colors.white,
-                    elevation: 0,
-                    color: Colors.white,
-                    margin: EdgeInsets.zero,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(
-                        Radius.circular(10),
+                  // Row 1: Subject code + type badge + class badge
+                  Row(
+                    children: [
+                      Text(
+                        subject.subjectId,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF64748B),
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                      side: BorderSide(color: Colors.grey),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 20),
-                      child: Row(
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: screenWidth * 0.6,
-                                child: Text(
-                                  subject.subjectId,
-                                  maxLines: 2,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const Gap(5),
-                              SizedBox(
-                                width: screenWidth * 0.6,
-                                child: Text(
-                                  "[${subject.subjectSchedule.first["subject_type"]}] ${subject.subjectName} - ${subject.subjectClass}",
-                                  maxLines: 2,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const Gap(5),
-                              SizedBox(
-                                width: screenWidth * 0.6,
-                                child: Text(
-                                  subject.majorName,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
+                      const Gap(8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: typeColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          typeLabel,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: typeColor,
                           ),
-                          SizedBox(
-                            width: screenWidth * 0.25,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                        context, "/lecturer/score",
-                                        arguments: subject);
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.all(0),
-                                    surfaceTintColor: Colors.white,
-                                    backgroundColor: const Color(0xFF0072BB),
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  child: const Icon(Icons.info_outline_rounded),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                        context, "/lecturer/percentage",
-                                        arguments: subject);
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.all(0),
-                                    surfaceTintColor: Colors.white,
-                                    backgroundColor: Colors.green,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  child: const Icon(Icons.percent_rounded),
-                                ),
-                              ],
-                            ),
-                          )
-                        ],
+                        ),
                       ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF2FF),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          "Kelas ${subject.subjectClass}",
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF4338CA),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(10),
+                  // Subject name
+                  Text(
+                    subject.subjectName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                      height: 1.3,
                     ),
+                  ),
+                  const Gap(6),
+                  // Major row
+                  Row(
+                    children: [
+                      Icon(Icons.school_outlined,
+                          size: 13, color: Colors.grey.shade500),
+                      const Gap(4),
+                      Text(
+                        subject.majorName,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(14),
+                  Divider(color: Colors.grey.shade100, height: 1),
+                  const Gap(12),
+                  // Action buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pushNamed(
+                              context,
+                              "/lecturer/score",
+                              arguments: subject,
+                            );
+                          },
+                          icon: const Icon(Icons.list_alt_rounded, size: 16),
+                          label: const Text(
+                            "Rekap Nilai",
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w700),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1E5AD6),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Gap(10),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pushNamed(
+                              context,
+                              "/lecturer/percentage",
+                              arguments: subject,
+                            );
+                          },
+                          icon: const Icon(Icons.bar_chart_rounded, size: 16),
+                          label: const Text(
+                            "Persentase",
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w700),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
-    scores.add(const Gap(10));
   }
-
-  return scores;
 }

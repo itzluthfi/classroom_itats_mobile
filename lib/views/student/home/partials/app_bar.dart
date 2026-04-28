@@ -1,8 +1,11 @@
 import 'package:classroom_itats_mobile/auth/bloc/auth/auth_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/academic_period/academic_period_bloc.dart';
+import 'package:classroom_itats_mobile/user/bloc/notification/notification_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/subject/subject.dart';
 import 'package:classroom_itats_mobile/user/repositories/academic_period_repository.dart';
+import 'package:classroom_itats_mobile/user/repositories/notification_repository.dart';
 import 'package:classroom_itats_mobile/utils/semester_helper.dart';
+import 'package:classroom_itats_mobile/views/notification/notification_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,12 +32,21 @@ class StudentAppBar extends StatefulWidget implements PreferredSizeWidget {
 class _StudentAppBarState extends State<StudentAppBar> {
   bool shadowColor = false;
   double? scrolledUnderElevation;
+  late final NotificationBloc _notificationBloc;
 
   @override
   void initState() {
     super.initState();
-
     BlocProvider.of<AcademicPeriodBloc>(context).add(GetAcademicPeriod());
+    // Bloc notifikasi milik AppBar sendiri agar tidak bergantung parent
+    _notificationBloc = NotificationBloc(repo: NotificationRepository())
+      ..add(RefreshUnreadCount());
+  }
+
+  @override
+  void dispose() {
+    _notificationBloc.close();
+    super.dispose();
   }
 
   _onButtonFilterPressed() async {
@@ -71,20 +83,10 @@ class _StudentAppBarState extends State<StudentAppBar> {
                   ),
                 if (widget.showBackButton) const SizedBox(width: 8),
                 Image.asset(
-                  "assets/application_images/Logo_Classroom_Square-no_bg.png", // Using square logo for the graduation cap
+                  "assets/application_images/Logo_Classroom_Square-no_bg.png",
                   height: 32,
                   width: 32,
                   fit: BoxFit.contain,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  "ITATS CLASSROOM",
-                  style: TextStyle(
-                    color: Color(0xFF14307E), // Dark blue color from the image
-                    fontWeight: FontWeight.w900,
-                    fontSize: 20,
-                    letterSpacing: 0.5,
-                  ),
                 ),
               ],
             ),
@@ -329,6 +331,70 @@ class _StudentAppBarState extends State<StudentAppBar> {
                 ),
 
                 const SizedBox(width: 8),
+
+                // ── Bell notifikasi dengan badge ──
+                BlocBuilder<NotificationBloc, NotificationState>(
+                  bloc: _notificationBloc,
+                  builder: (context, state) {
+                    final unread =
+                        state is NotificationLoaded ? state.unreadCount : 0;
+                    return GestureDetector(
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider(
+                              create: (_) => NotificationBloc(
+                                  repo: NotificationRepository())
+                                ..add(LoadNotifications()),
+                              child: const NotificationPage(),
+                            ),
+                          ),
+                        );
+                        if (mounted) {
+                          _notificationBloc.add(RefreshUnreadCount());
+                        }
+                      },
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            child: const Icon(
+                              Icons.notifications_outlined,
+                              color: Color(0xFF14307E),
+                              size: 26,
+                            ),
+                          ),
+                          if (unread > 0)
+                            Positioned(
+                              right: 4,
+                              top: 4,
+                              child: Container(
+                                width: 16,
+                                height: 16,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFEF4444),
+                                  shape: BoxShape.circle,
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  unread > 9 ? '9+' : '$unread',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(width: 4),
 
                 // Profile Avatar (Clickable for logout/profile)
                 GestureDetector(

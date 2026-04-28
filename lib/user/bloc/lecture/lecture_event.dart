@@ -98,6 +98,7 @@ class CreateLectureReport extends LectureEvent {
   final String materialRealization;
   final String presenceLimit;
   final int collegeType;
+  final String linkMeet;
 
   const CreateLectureReport({
     required this.academicPeriodId,
@@ -117,6 +118,7 @@ class CreateLectureReport extends LectureEvent {
     required this.materialRealization,
     required this.presenceLimit,
     required this.collegeType,
+    this.linkMeet = '',
   });
 
   @override
@@ -138,11 +140,12 @@ class CreateLectureReport extends LectureEvent {
         materialRealization,
         presenceLimit,
         collegeType,
+        linkMeet,
       ];
 
   @override
   String toString() =>
-      "CreateLectureReport{academicPeriodId: $academicPeriodId subjectId: $subjectId majorId: $majorId lecturerId: $lecturerId subjectClass: $subjectClass lectureSchedule: $lectureSchedule lectureType: $lectureType subjectCredit: $subjectCredit hourId: $hourId material: $material entryTime: $entryTime approvalStatus: $approvalStatus weekId: $weekId timeRealization: $timeRealization materialRealization: $materialRealization presenceLimit: $presenceLimit collegeType: $collegeType}";
+      "CreateLectureReport{academicPeriodId: $academicPeriodId subjectId: $subjectId majorId: $majorId lecturerId: $lecturerId subjectClass: $subjectClass lectureSchedule: $lectureSchedule lectureType: $lectureType subjectCredit: $subjectCredit hourId: $hourId material: $material entryTime: $entryTime approvalStatus: $approvalStatus weekId: $weekId timeRealization: $timeRealization materialRealization: $materialRealization presenceLimit: $presenceLimit collegeType: $collegeType linkMeet: $linkMeet}";
 }
 
 class EditLectureReport extends LectureEvent {

@@ -1,4 +1,5 @@
 import 'package:classroom_itats_mobile/auth/bloc/auth/auth.dart';
+import 'package:classroom_itats_mobile/user/bloc/assignment/assignment_bloc.dart';
 import 'package:classroom_itats_mobile/user/repositories/academic_period_repository.dart';
 import 'package:classroom_itats_mobile/user/repositories/major_repository.dart';
 import 'package:classroom_itats_mobile/views/lecturer/assignments/partials/assignment_body.dart';
@@ -79,9 +80,17 @@ class _LecturerAssignmentPageState extends State<LecturerAssignmentPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           if (_currentAcademicPeriod == _activeAcademicPeriod) {
-            Navigator.pushReplacementNamed(
+            Navigator.pushNamed(
                 context, "/lecturer/assignment/create",
-                arguments: [_currentAcademicPeriod, _major]);
+                arguments: [_currentAcademicPeriod, _major])
+            .then((_) {
+              // Refresh list setelah kembali dari halaman create (hanya jika halaman masih aktif)
+              if (mounted) {
+                BlocProvider.of<AssignmentBloc>(context).add(
+                    GetLecturerAssignment(
+                        academicPeriodId: _currentAcademicPeriod ?? ""));
+              }
+            });
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
