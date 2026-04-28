@@ -34,18 +34,14 @@ class _StudentHomeBodyState extends State<StudentHomeBody> {
 
     // Always use specific period filter to ensure consistency
     if (academicPeriod != "") {
-      setState(() {
-        BlocProvider.of<SubjectBloc>(context).add(FilterButtonPressed(
-          academicPeriod: academicPeriod,
-          major: "",
-          context: context,
-        ));
-      });
+      BlocProvider.of<SubjectBloc>(context).add(FilterButtonPressed(
+        academicPeriod: academicPeriod,
+        major: "",
+        context: context,
+      ));
     } else {
       // Fallback if no period found (should rarely happen if repo init is correct)
-      setState(() {
-        BlocProvider.of<SubjectBloc>(context).add(GetSubject(context: context));
-      });
+      BlocProvider.of<SubjectBloc>(context).add(GetSubject(context: context));
     }
   }
 

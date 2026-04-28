@@ -33,14 +33,11 @@ class _StudentPresensiPageState extends State<StudentPresensiPage> {
   }
 
   _getPresensi() async {
-    final state = context.read<PresensiBloc>().state;
-    if (state is PresensiLoaded) {
-      return;
-    }
     var academicPeriod =
         await widget.academicPeriodRepository.getCurrentAcademicPeriod();
     if (academicPeriod != "" && mounted) {
       _lastLoadedPeriod = academicPeriod;
+      context.read<PresensiBloc>().add(ClearPresences());
       context.read<PresensiBloc>().add(LoadActivePresences(academicPeriod));
     }
   }
