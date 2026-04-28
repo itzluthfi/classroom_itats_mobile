@@ -25,6 +25,10 @@ class ApiClient {
 
   Dio _buildDio() {
     final dio = Dio();
+    
+    // Tambahkan User-Agent layaknya browser asli agar lolos dari blokir Firewall (LiteSpeed/Cloudflare)
+    dio.options.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    
     dio.interceptors.add(_HmacInterceptor(_storage));
     return dio;
   }

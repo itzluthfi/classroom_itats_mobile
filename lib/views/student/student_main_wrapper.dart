@@ -16,15 +16,20 @@ import 'package:classroom_itats_mobile/user/bloc/assignment/assignment_bloc.dart
 
 class StudentMainWrapper extends StatefulWidget {
   final AcademicPeriodRepository academicPeriodRepository;
+  final int initialTabIndex;
 
-  const StudentMainWrapper({super.key, required this.academicPeriodRepository});
+  const StudentMainWrapper({
+    super.key,
+    required this.academicPeriodRepository,
+    this.initialTabIndex = 0,
+  });
 
   @override
   State<StudentMainWrapper> createState() => _StudentMainWrapperState();
 }
 
 class _StudentMainWrapperState extends State<StudentMainWrapper> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
 
   List<Widget> get _pages => [
         StudentHomePage(
@@ -34,6 +39,12 @@ class _StudentMainWrapperState extends State<StudentMainWrapper> {
         StudentTugasPage(
             academicPeriodRepository: widget.academicPeriodRepository),
       ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialTabIndex;
+  }
 
   void _onItemTapped(int index) {
     setState(() {

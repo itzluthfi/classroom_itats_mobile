@@ -177,7 +177,7 @@ class _ProgressCard extends StatelessWidget {
     final pct = total > 0 ? hadir / total : 0.0;
     final barColor = pct >= 0.75 ? _kGreen : pct >= 0.5 ? const Color(0xFFF59E0B) : _kRed;
     final label = pct >= 0.75
-        ? '✅ Kehadiran memenuhi syarat'
+        ? 'Kehadiran memenuhi syarat'
         : pct >= 0.5
             ? '⚠️ Harap tingkatkan kehadiran'
             : '❌ Di bawah batas minimum';

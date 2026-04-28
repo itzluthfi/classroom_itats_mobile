@@ -6,6 +6,8 @@ import 'package:dio/io.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'package:classroom_itats_mobile/core/api_client.dart';
+
 class ProfileRepository {
   final storage = const FlutterSecureStorage(
       aOptions: AndroidOptions(encryptedSharedPreferences: true));
@@ -14,7 +16,7 @@ class ProfileRepository {
   Future<Profile> getStudentProfile(String academicPeriod) async {
     final value = await storage.read(key: "token");
 
-    Response response = await _dio.post(
+    Response response = await ApiClient.instance.dio.post(
       "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/students/profile",
       data: {
         "academic_period_id": academicPeriod,
