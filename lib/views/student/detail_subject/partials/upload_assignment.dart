@@ -121,6 +121,7 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
       },
       builder: (context, state) {
         bool isLoading = state is CreateAssignmentLoading;
+        bool isDownloading = state is AssignmentFileDownloadLoading;
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -393,16 +394,27 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                           ),
                         ),
                       ],
-                      // Tombol Download
-                      if (_submissionFile.isNotEmpty ||
+                          if (_submissionFile.isNotEmpty ||
                           _submissionLink.isNotEmpty) ...[
                         const Gap(12),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed:
-                                _isDownloading ? null : _downloadSubmittedFile,
-                            icon: _isDownloading
+                            onPressed: isDownloading
+                                ? null
+                                : () {
+                                    BlocProvider.of<AssignmentBloc>(context).add(
+                                      DownloadStudentAssignmentSubmission(
+                                        fileLink: _submissionLink.isNotEmpty
+                                            ? _submissionLink
+                                            : _submissionFile,
+                                        fileName: _submissionFile.isNotEmpty
+                                            ? _submissionFile
+                                            : _submissionLink.split('/').last,
+                                      ),
+                                    );
+                                  },
+                            icon: isDownloading
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
@@ -410,7 +422,7 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                                         strokeWidth: 2, color: Colors.white),
                                   )
                                 : const Icon(Icons.download_rounded, size: 16),
-                            label: Text(_isDownloading
+                            label: Text(isDownloading
                                 ? "Mengunduh..."
                                 : "Unduh File Submission"),
                             style: ElevatedButton.styleFrom(
@@ -425,10 +437,11 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                             ),
                           ),
                         ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
+
                 const Gap(20),
                 const Divider(),
                 const Gap(8),

@@ -3,8 +3,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'package:classroom_itats_mobile/core/api_client.dart';
+
 class PresensiRepository {
-  final Dio _dio = Dio();
+  final _dio = ApiClient.instance.dio;
   final storage = const FlutterSecureStorage(
       aOptions: AndroidOptions(encryptedSharedPreferences: true));
 
