@@ -1,6 +1,9 @@
 import 'dart:io';
 
+import 'package:classroom_itats_mobile/user/bloc/notification/notification_bloc.dart';
 import 'package:classroom_itats_mobile/user/repositories/academic_period_repository.dart';
+import 'package:classroom_itats_mobile/user/repositories/notification_repository.dart';
+import 'package:classroom_itats_mobile/views/notification/notification_page.dart';
 import 'package:classroom_itats_mobile/views/student/home/home_page.dart';
 import 'package:classroom_itats_mobile/views/student/presensi/presensi_page.dart';
 import 'package:classroom_itats_mobile/views/student/tugas/tugas_page.dart';
@@ -40,10 +43,18 @@ class _StudentMainWrapperState extends State<StudentMainWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    // Definisi warna berdasarkan tema aplikasi
     final primaryColor = Theme.of(context).colorScheme.primary;
     final unselectedColor = Colors.grey.shade500;
 
+    return BlocProvider(
+      create: (_) => NotificationBloc(repo: NotificationRepository())
+        ..add(RefreshUnreadCount()),
+      child: Builder(builder: (ctx) => _buildScaffold(ctx, primaryColor, unselectedColor)),
+    );
+  }
+
+  Widget _buildScaffold(
+      BuildContext context, Color primaryColor, Color unselectedColor) {
     return PopScope(
       child: MultiBlocListener(
         listeners: [

@@ -27,6 +27,9 @@ import 'package:classroom_itats_mobile/user/repositories/profile_repository.dart
 import 'package:classroom_itats_mobile/user/repositories/study_achievement_repository.dart';
 import 'package:classroom_itats_mobile/user/repositories/study_material_repository.dart';
 import 'package:classroom_itats_mobile/user/repositories/subject_member_repository.dart';
+import 'package:classroom_itats_mobile/user/bloc/notification/notification_bloc.dart';
+import 'package:classroom_itats_mobile/user/repositories/notification_repository.dart';
+import 'package:classroom_itats_mobile/views/notification/notification_page.dart';
 import 'package:classroom_itats_mobile/views/create_forum_page.dart';
 import 'package:classroom_itats_mobile/views/lecturer/assignments/assignment_page.dart';
 import 'package:classroom_itats_mobile/views/lecturer/assignments/create_assignment_page.dart';
@@ -62,6 +65,22 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
+
+// Global navigator key for FCM deep-link when app is terminated/background
+final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+/// Maps FCM message data.type to a named route
+String? _routeFromMessage(RemoteMessage message) {
+  final type = message.data['type'] as String? ?? '';
+  switch (type) {
+    case 'assignment':
+      return '/student/assignments';
+    case 'presence':
+      return '/student/home';
+    default:
+      return '/notifications';
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -103,6 +122,21 @@ void main() async {
   await NotificationService().initNotification();
 
   await initializeDateFormatting("id_ID", null);
+
+  // Handle FCM deep-link when app is TERMINATED and user taps the notification
+  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+  String? pendingRoute;
+  if (initialMessage != null) {
+    pendingRoute = _routeFromMessage(initialMessage);
+  }
+
+  // Handle FCM deep-link when app is in BACKGROUND
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    final route = _routeFromMessage(message);
+    if (route != null) {
+      _navigatorKey.currentState?.pushNamed(route);
+    }
+  });
 
   // ✅ FIX: Null-safe check untuk prefs
   if (prefs != null && prefs.getStringList("application_images") == null) {
@@ -247,6 +281,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      navigatorKey: _navigatorKey,
       home: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) => {
           if (state is AuthAuthenticated)
@@ -348,6 +383,11 @@ class MyApp extends StatelessWidget {
             const LecturerEditCollegeReportPage(),
         "/lecturer/subject/assignments": (context) =>
             const LecturerSubjectAssignmentPage(),
+        "/notifications": (context) => BlocProvider(
+          create: (_) => NotificationBloc(repo: NotificationRepository())
+            ..add(LoadNotifications()),
+          child: const NotificationPage(),
+        ),
       },
     );
   }

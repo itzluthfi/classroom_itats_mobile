@@ -6,6 +6,7 @@ import 'package:classroom_itats_mobile/models/subject.dart';
 import 'package:classroom_itats_mobile/user/bloc/lecture/lecture_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/study_achievement/study_achievement_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/study_material/study_material_bloc.dart';
+import 'package:classroom_itats_mobile/user/repositories/study_material_repository.dart';
 import 'package:classroom_itats_mobile/views/student/detail_subject/partials/assignments_body.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -141,85 +142,193 @@ List<Widget> _buildWeeklyCards(
   }
 
   for (var mapping in cardDataMappings) {
-    cards.add(_buildWeeklyCard(
-      context,
-      screenWidth,
-      cardDataMappings.indexOf(mapping),
-      userRepository,
-      subject,
-      mapping["studyAchievement"],
-      mapping["assignment"],
-      mapping["lectureWeek"],
+    cards.add(_WeeklyCard(
+      key: ValueKey(cardDataMappings.indexOf(mapping)),
+      screenWidth: screenWidth,
+      index: cardDataMappings.indexOf(mapping),
+      userRepository: userRepository,
+      subject: subject,
+      studyAchievement: mapping["studyAchievement"],
+      assignment: mapping["assignment"],
+      lecture: mapping["lectureWeek"],
     ));
   }
 
   return cards;
 }
 
-Widget _buildWeeklyCard(
-    context,
-    double screenWidth,
-    int index,
-    UserRepository userRepository,
-    Subject subject,
-    StudyAchievement? studyAchievement,
-    Assignment? assignment,
-    Lecture? lecture) {
-  String weekStr = (index + 1).toString().padLeft(2, '0');
+// ─── Stateful card agar bisa auto-expand ──────────────────────────────────────
+class _WeeklyCard extends StatefulWidget {
+  final double screenWidth;
+  final int index;
+  final UserRepository userRepository;
+  final Subject subject;
+  final StudyAchievement? studyAchievement;
+  final Assignment? assignment;
+  final Lecture? lecture;
 
-  return Container(
-    margin: const EdgeInsets.only(bottom: 12),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.grey.shade100, width: 1),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.04), // or withAlpha(10)
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        )
-      ],
-    ),
-    child: Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        iconColor: const Color(0xFF8692A6),
-        collapsedIconColor: const Color(0xFF8692A6),
-        title: Row(
-          children: [
-            Container(
-              width: 44, // Slightly increased size
-              height: 44,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE8F0FE),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  weekStr,
-                  style: const TextStyle(
-                    color: Color(0xFF1E5AD6),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14, // Back to normal font
+  const _WeeklyCard({
+    super.key,
+    required this.screenWidth,
+    required this.index,
+    required this.userRepository,
+    required this.subject,
+    this.studyAchievement,
+    this.assignment,
+    this.lecture,
+  });
+
+  @override
+  State<_WeeklyCard> createState() => _WeeklyCardState();
+}
+
+class _WeeklyCardState extends State<_WeeklyCard> {
+  late bool _isExpanded;
+  bool _hasMaterials = false; // default false, di-update async
+  final _materialRepo = StudyMaterialRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-expand jika ada tugas
+    _isExpanded = widget.assignment != null;
+    // Cek ke API apakah ada file materi untuk minggu ini
+    _checkMaterials();
+  }
+
+  Future<void> _checkMaterials() async {
+    try {
+      final materials = await _materialRepo.getStudyMaterial(
+        widget.subject.academicPeriodId,
+        widget.subject.subjectId,
+        widget.subject.subjectClass,
+        widget.index + 1,
+      );
+      if (!mounted) return;
+      final hasMat = materials.isNotEmpty;
+      setState(() {
+        _hasMaterials = hasMat;
+        // Auto-expand juga jika ada materi
+        if (hasMat && !_isExpanded) _isExpanded = true;
+      });
+    } catch (_) {
+      // Gagal fetch — badge tidak ditampilkan (aman)
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final index = widget.index;
+    final assignment = widget.assignment;
+    final lecture = widget.lecture;
+    final studyAchievement = widget.studyAchievement;
+    final subject = widget.subject;
+    final screenWidth = widget.screenWidth;
+
+    final String weekStr = (index + 1).toString().padLeft(2, '0');
+    final bool hasContent = assignment != null || _hasMaterials;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: hasContent
+              ? const Color(0xFF1E5AD6).withOpacity(0.15)
+              : Colors.grey.shade100,
+          width: hasContent ? 1.5 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: _isExpanded,
+          onExpansionChanged: (v) => setState(() => _isExpanded = v),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          iconColor: const Color(0xFF8692A6),
+          collapsedIconColor: const Color(0xFF8692A6),
+          title: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Badge nomor minggu
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: hasContent
+                      ? const Color(0xFF1E5AD6).withOpacity(0.12)
+                      : const Color(0xFFE8F0FE),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    weekStr,
+                    style: TextStyle(
+                      color: hasContent
+                          ? const Color(0xFF1E5AD6)
+                          : const Color(0xFF1E5AD6),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const Gap(14),
-            Text(
-              "Minggu ke - ${index + 1}",
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Color(0xFF222B45),
+              const Gap(14),
+
+              // Judul minggu + subtitle badge materi/tugas
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Minggu ke - ${index + 1}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: Color(0xFF222B45),
+                      ),
+                    ),
+                    if (assignment != null || _hasMaterials) ...[
+                      const Gap(4),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          // Badge Tugas
+                          if (assignment != null)
+                            _BadgeChip(
+                              label: assignment.assignmentTitle.isNotEmpty
+                                  ? assignment.assignmentTitle
+                                  : 'Ada Tugas',
+                              color: const Color(0xFFFF7A00),
+                              icon: Icons.assignment_outlined,
+                            ),
+                          // Badge Materi — hanya jika API konfirmasi ada file
+                          if (_hasMaterials)
+                            const _BadgeChip(
+                              label: 'Ada Materi',
+                              color: Color(0xFF1E5AD6),
+                              icon: Icons.description_outlined,
+                            ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        children: [
+            ],
+          ),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          children: [
+
           // Capaian Pembelajaran
           const Align(
             alignment: Alignment.centerLeft,
@@ -491,9 +600,10 @@ Widget _buildWeeklyCard(
             ),
           )
         ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 Future<void> _launchInBrowser(Uri url) async {
@@ -502,6 +612,50 @@ Future<void> _launchInBrowser(Uri url) async {
     mode: LaunchMode.externalApplication,
   )) {
     throw Exception('Could not launch $url');
+  }
+}
+
+// ─── Badge chip kecil untuk judul tugas/materi di header card ─────────────────
+class _BadgeChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  final IconData icon;
+
+  const _BadgeChip({
+    required this.label,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.25), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
