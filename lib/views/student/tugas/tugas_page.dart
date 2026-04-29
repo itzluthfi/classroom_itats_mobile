@@ -430,73 +430,138 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
   }
 
   List<Assignment> _getAssignmentsForDay(DateTime day) {
-    return _allAssignments.where((item) {
+    // Gunakan _filteredAssignments agar titik merah berubah sesuai filter atas!
+    return _filteredAssignments.where((item) {
       return isSameDay(item.dueDate, day);
     }).toList();
   }
 
-  Widget _buildCalendarView() {
-    return Column(
-      children: [
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+  void _showDailyAssignmentsModal(BuildContext context, DateTime day, List<Assignment> assignments) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: const BoxDecoration(
+            color: Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          child: TableCalendar<Assignment>(
-            firstDay: DateTime.utc(2020, 10, 16),
-            lastDay: DateTime.utc(2030, 3, 14),
-            focusedDay: _focusedDay,
-            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-              });
-            },
-            eventLoader: _getAssignmentsForDay,
-            calendarStyle: const CalendarStyle(
-              markerDecoration: BoxDecoration(
-                color: Color(0xFFEF4444), // Merah penanda tugas
-                shape: BoxShape.circle,
-              ),
-              selectedDecoration: BoxDecoration(
-                color: Color(0xFF14307E),
-                shape: BoxShape.circle,
-              ),
-              todayDecoration: BoxDecoration(
-                color: Color(0xFF93A5CF),
-                shape: BoxShape.circle,
-              ),
-            ),
-            headerStyle: const HeaderStyle(
-              formatButtonVisible: false,
-              titleCentered: true,
-            ),
-          ),
-        ),
-        Expanded(
-          child: _selectedDay == null
-              ? const Center(child: Text("Pilih tanggal kalender untuk melihat daftar tugas.", style: TextStyle(color: Colors.grey)))
-              : ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  children: _getAssignmentsForDay(_selectedDay!).isEmpty
-                      ? [
-                          const Center(
-                              child: Padding(
-                            padding: EdgeInsets.all(24.0),
-                            child: Text("Tidak ada deadline tugas pada tanggal ini",
-                                style: TextStyle(color: Colors.grey)),
-                          ))
-                        ]
-                      : _getAssignmentsForDay(_selectedDay!)
-                          .map((data) => _buildTugasCard(data))
-                          .toList(),
+          child: Column(
+            children: [
+              const Gap(12),
+              Container(
+                width: 40,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
                 ),
+              ),
+              const Gap(16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today_rounded, color: Color(0xFF14307E), size: 24),
+                    const Gap(12),
+                    Text(
+                      DateFormat('dd MMMM yyyy').format(day),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF14307E).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "${assignments.length} Tugas",
+                        style: const TextStyle(color: Color(0xFF14307E), fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(16),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: assignments.length,
+                  itemBuilder: (ctx, idx) => _buildTugasCard(assignments[idx]),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCalendarView() {
+    return SingleChildScrollView(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: 5,
+              offset: const Offset(0, 4),
+            )
+          ],
         ),
-      ],
+        child: TableCalendar<Assignment>(
+          firstDay: DateTime.utc(2020, 10, 16),
+          lastDay: DateTime.utc(2030, 3, 14),
+          focusedDay: _focusedDay,
+          selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+          onDaySelected: (selectedDay, focusedDay) {
+            setState(() {
+              _selectedDay = selectedDay;
+              _focusedDay = focusedDay;
+            });
+            
+            final dailyAssignments = _getAssignmentsForDay(selectedDay);
+            if (dailyAssignments.isNotEmpty) {
+              _showDailyAssignmentsModal(context, selectedDay, dailyAssignments);
+            }
+          },
+          eventLoader: _getAssignmentsForDay,
+          headerStyle: const HeaderStyle(
+            formatButtonVisible: false,
+            titleCentered: true,
+            titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF14307E)),
+            leftChevronIcon: Icon(Icons.chevron_left_rounded, color: Color(0xFF14307E)),
+            rightChevronIcon: Icon(Icons.chevron_right_rounded, color: Color(0xFF14307E)),
+          ),
+          calendarStyle: const CalendarStyle(
+            outsideDaysVisible: false,
+            markerDecoration: BoxDecoration(
+              color: Color(0xFFEF4444), // Merah penanda tugas
+              shape: BoxShape.circle,
+            ),
+            selectedDecoration: BoxDecoration(
+              color: Color(0xFF14307E),
+              shape: BoxShape.circle,
+            ),
+            todayDecoration: BoxDecoration(
+              color: Color(0xFF93A5CF),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
