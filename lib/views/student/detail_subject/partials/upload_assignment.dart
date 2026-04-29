@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:classroom_itats_mobile/models/assignment.dart';
 import 'package:classroom_itats_mobile/user/bloc/assignment/assignment_bloc.dart';
 import 'package:classroom_itats_mobile/user/repositories/assignment_repository.dart';
+import 'package:classroom_itats_mobile/services/notification_service.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -60,17 +62,12 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
     return 'https://$webUrl/storage/$relativePath';
   }
 
-  Future<void> _downloadSubmittedFile() async {
-    final rawPath =
-        _submissionFile.isNotEmpty ? _submissionFile : _submissionLink;
-    final fileName = rawPath.isNotEmpty
-        ? rawPath.split('/').last
-        : 'file_submission';
+  Future<void> _downloadFile(String rawPath, String defaultName) async {
+    final fileName = rawPath.isNotEmpty ? rawPath.split('/').last : defaultName;
 
     setState(() => _isDownloading = true);
 
     final repo = AssignmentRepository();
-    // downloadAssignmentFile sekarang mengembalikan path file (String?) atau null jika gagal
     final savedPath = await repo.downloadAssignmentFile(rawPath, fileName);
 
     setState(() => _isDownloading = false);
@@ -78,18 +75,37 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
     if (!mounted) return;
 
     if (savedPath != null) {
-      final hint = savedPath.contains('Android/data')
-          ? 'Files → Android → data → classroom_itats_mobile → files → Download'
-          : savedPath;
+      // Tampilkan notifikasi
+      try {
+        await NotificationService().showNotification(
+            title: "Unduhan Berhasil",
+            body: "File tersimpan di perangkat Anda.",
+            payload: savedPath);
+      } catch (_) {}
+
+      // Tampilkan SnackBar dengan tombol Lihat File
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ File diunduh!\nLokasi: $hint'),
+          content: const Text('✅ File berhasil diunduh!'),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Lihat File',
+            textColor: Colors.white,
+            onPressed: () {
+              OpenFilex.open(savedPath);
+            },
+          ),
         ),
       );
     } else {
+      try {
+        await NotificationService().showNotification(
+            title: "Unduhan Gagal",
+            body: "Gagal mengunduh file. Cek koneksi internet.");
+      } catch (_) {}
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('❌ Gagal mengunduh file. Cek koneksi internet.'),
@@ -98,6 +114,35 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
         ),
       );
     }
+  }
+
+  void _showErrorModal(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red),
+            const Gap(8),
+            Expanded(
+              child: Text(
+                title, 
+                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16),
+                maxLines: 2,
+              ),
+            ),
+          ],
+        ),
+        content: Text(message, style: const TextStyle(fontSize: 14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text("Mengerti", style: TextStyle(color: Colors.grey.shade800, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -124,7 +169,12 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
         bool isDownloading = state is AssignmentFileDownloadLoading;
 
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          padding: EdgeInsets.only(
+            left: 24.0, 
+            right: 24.0, 
+            top: 16.0, 
+            bottom: 16.0 + MediaQuery.of(context).padding.bottom
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -235,6 +285,29 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
+                                ),
+                                IconButton(
+                                  onPressed: _isDownloading
+                                      ? null
+                                      : () => _downloadFile(
+                                          widget.assignment!.fileLink,
+                                          widget.assignment!.fileName),
+                                  icon: _isDownloading
+                                      ? const SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(
+                                            color: Color(0xFFD97706),
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.download_rounded,
+                                          size: 18,
+                                          color: Color(0xFFD97706),
+                                        ),
+                                  constraints: const BoxConstraints(),
+                                  padding: EdgeInsets.zero,
                                 ),
                               ],
                             ),
@@ -400,21 +473,12 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed: isDownloading
+                            onPressed: _isDownloading
                                 ? null
-                                : () {
-                                    BlocProvider.of<AssignmentBloc>(context).add(
-                                      DownloadStudentAssignmentSubmission(
-                                        fileLink: _submissionLink.isNotEmpty
-                                            ? _submissionLink
-                                            : _submissionFile,
-                                        fileName: _submissionFile.isNotEmpty
-                                            ? _submissionFile
-                                            : _submissionLink.split('/').last,
-                                      ),
-                                    );
-                                  },
-                            icon: isDownloading
+                                : () => _downloadFile(
+                                    _submissionLink.isNotEmpty ? _submissionLink : _submissionFile,
+                                    _submissionFile.isNotEmpty ? _submissionFile : _submissionLink.split('/').last),
+                            icon: _isDownloading
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
@@ -422,7 +486,7 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                                         strokeWidth: 2, color: Colors.white),
                                   )
                                 : const Icon(Icons.download_rounded, size: 16),
-                            label: Text(isDownloading
+                            label: Text(_isDownloading
                                 ? "Mengunduh..."
                                 : "Unduh File Submission"),
                             style: ElevatedButton.styleFrom(
@@ -471,10 +535,10 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                         color: Color(0xFFEF4444), size: 18),
                     const Gap(8),
                     Expanded(
-                      child: Text(
-                        "Saat ini aplikasi hanya mendukung file dengan ekstensi pdf, doc, docx, xlsx, csv, rar & zip.",
+                      child: const Text(
+                        "Saat ini aplikasi hanya mendukung file maksimal 5 MB dengan ekstensi pdf, doc, docx, xlsx, csv, rar & zip.",
                         style: TextStyle(
-                          color: const Color(0xFF991B1B),
+                          color: Color(0xFF991B1B),
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                           height: 1.4,
@@ -507,9 +571,32 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                             'docx', 'xlsx', 'csv', 'zip', 'rar'
                           ],
                         );
-                        if (_result != null) {
+                        if (_result != null && _result!.files.single.path != null) {
+                          File pickedFile = File(_result!.files.single.path!);
+                          int fileSize = pickedFile.lengthSync();
+                          String extension = pickedFile.path.split('.').last.toLowerCase();
+                          List<String> validExtensions = [
+                            'pdf', 'doc', 'docx', 'xlsx', 'csv', 'zip', 'rar'
+                          ];
+
+                          if (!validExtensions.contains(extension)) {
+                            _showErrorModal(
+                              "Format Tidak Didukung", 
+                              "Format file .$extension tidak didukung. Harap pilih file dengan format yang diizinkan."
+                            );
+                            return;
+                          }
+
+                          if (fileSize > 5 * 1024 * 1024) {
+                            _showErrorModal(
+                              "Ukuran Terlalu Besar", 
+                              "Ukuran file Anda melebihi batas maksimal 5 MB. Harap pilih file yang lebih kecil."
+                            );
+                            return;
+                          }
+
                           setState(() {
-                            _file = File(_result!.files.single.path ?? "");
+                            _file = pickedFile;
                           });
                         }
                       },
