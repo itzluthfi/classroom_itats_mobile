@@ -32,6 +32,7 @@ class _NotificationPageState extends State<NotificationPage> {
         Navigator.pushNamed(context, '/student/tugas');
         break;
       case 'presence':
+      case 'class_start': // Notif kunci/kelas mulai redirect ke Presensi
         // Buka tab Presensi (index 1) di main wrapper
         Navigator.pushNamed(context, '/student/presensi');
         break;
@@ -290,6 +291,8 @@ class _NotificationPageState extends State<NotificationPage> {
         return Icons.assignment_rounded;
       case 'presence':
         return Icons.fact_check_rounded;
+      case 'class_start':
+        return Icons.meeting_room_rounded;
       case 'announcement':
         return Icons.campaign_rounded;
       case 'grade':
@@ -309,6 +312,8 @@ class _NotificationPageState extends State<NotificationPage> {
         return const Color(0xFF3B82F6);
       case 'presence':
         return const Color(0xFF10B981);
+      case 'class_start':
+        return const Color(0xFFEF4444); // Merah untuk penanda urgency kelas dimulai
       case 'announcement':
         return const Color(0xFFF59E0B);
       case 'grade':
