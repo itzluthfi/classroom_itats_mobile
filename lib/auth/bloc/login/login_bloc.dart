@@ -24,7 +24,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         late String token;
 
         if (response.statusCode != 200) {
-          emit(LoginFailure(error: response.data["message"]));
+          String errorMessage = "Terjadi kesalahan pada server";
+          if (response.data is Map && response.data["message"] != null) {
+            errorMessage = response.data["message"];
+          } else if (response.data is String) {
+            errorMessage = "Respons server tidak valid (Mungkin terjadi error jaringan atau server down).";
+          }
+          emit(LoginFailure(error: errorMessage));
         } else {
           token = response.data["token"];
           
