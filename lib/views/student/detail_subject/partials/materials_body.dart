@@ -9,10 +9,9 @@ import 'package:classroom_itats_mobile/user/bloc/study_material/study_material_b
 import 'package:classroom_itats_mobile/user/repositories/study_material_repository.dart';
 import 'package:classroom_itats_mobile/views/student/detail_subject/partials/assignments_body.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // MethodChannel, Clipboard, ClipboardData
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
-import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class StudentMaterialsBody extends StatefulWidget {
   final Subject subject;
@@ -34,22 +33,14 @@ class _StudentMaterialsBodyState extends State<StudentMaterialsBody> {
   }
 
   _checkLoad() async {
-    // Selalu load jika bloc belum dalam state Loaded
-    final currentState = BlocProvider.of<StudyAchievementBloc>(context).state;
-    print("DEBUG _checkLoad: state = $currentState");
-
-    if (currentState is! StudyAchievementLoaded) {
-      print("DEBUG _checkLoad: Triggering GetStudyAchievement...");
-      setState(() {
-        BlocProvider.of<StudyAchievementBloc>(context).add(GetStudyAchievement(
-          academicPeriod: widget.subject.academicPeriodId,
-          subjectId: widget.subject.subjectId,
-          subjectClass: widget.subject.subjectClass,
-        ));
-      });
-    } else {
-      print("DEBUG _checkLoad: Already loaded, assignments count = ${currentState.assignments.length}");
-    }
+    // Bug 4 fix: Selalu reload data saat pindah ke halaman ini agar tidak
+    // menampilkan data mata kuliah sebelumnya (state stale).
+    print("DEBUG _checkLoad: Triggering GetStudyAchievement for subject ${widget.subject.subjectId}...");
+    BlocProvider.of<StudyAchievementBloc>(context).add(GetStudyAchievement(
+      academicPeriod: widget.subject.academicPeriodId,
+      subjectId: widget.subject.subjectId,
+      subjectClass: widget.subject.subjectClass,
+    ));
   }
 
   @override
@@ -558,14 +549,16 @@ class _WeeklyCardState extends State<_WeeklyCard> {
                     ),
                   ),
 
-                // Hybrid Button (only show if it's NOT offline)
+                // Hybrid Button: tampil hanya jika belum ada rekaman
+                // (jika rekaman sudah ada, kuliah sudah selesai → Hybrid tidak relevan)
                 if (lecture != null && lecture.collegeType != 1)
                   if (lecture.linkMeet != null && lecture.linkMeet!.isNotEmpty)
+                    if (lecture.linkRecord == null || lecture.linkRecord!.isEmpty)
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         ElevatedButton.icon(
-                          onPressed: () => _launchInBrowser(Uri.parse(lecture.linkMeet!)),
+                          onPressed: () => _openInBrowser(lecture.linkMeet!),
                           icon: const Icon(Icons.videocam, size: 18),
                           label: const Text("Hybrid"),
                           style: ElevatedButton.styleFrom(
@@ -623,7 +616,7 @@ class _WeeklyCardState extends State<_WeeklyCard> {
                     lecture.linkRecord!.isNotEmpty)
                   ElevatedButton.icon(
                     onPressed: () =>
-                        _launchInBrowser(Uri.parse(lecture.linkRecord!)),
+                        _openInBrowser(lecture.linkRecord!),
                     icon: const Icon(Icons.play_circle_fill, size: 18),
                     label: const Text("Rekaman"),
                     style: ElevatedButton.styleFrom(
@@ -646,12 +639,17 @@ class _WeeklyCardState extends State<_WeeklyCard> {
   }
 }
 
-Future<void> _launchInBrowser(Uri url) async {
-  if (!await launchUrl(
-    url,
-    mode: LaunchMode.externalApplication,
-  )) {
-    throw Exception('Could not launch $url');
+// Helper: buka URL di browser Android via Intent langsung (bypass url_launcher)
+Future<void> _openInBrowser(String url) async {
+  String normalized = url;
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    normalized = 'https://$url';
+  }
+  try {
+    const channel = MethodChannel('com.itats.classroom/browser');
+    await channel.invokeMethod('openUrl', {'url': normalized});
+  } catch (e) {
+    debugPrint('[BROWSER] Gagal membuka $normalized: $e');
   }
 }
 

@@ -11,8 +11,9 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
 
-    private val WHATSAPP_CHANNEL = "com.itats.classroom/whatsapp"
-    private val DOWNLOAD_CHANNEL = "com.itats.classroom/download"
+    private val WHATSAPP_CHANNEL  = "com.itats.classroom/whatsapp"
+    private val DOWNLOAD_CHANNEL  = "com.itats.classroom/download"
+    private val BROWSER_CHANNEL   = "com.itats.classroom/browser"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -78,6 +79,29 @@ class MainActivity : FlutterActivity() {
                         result.success(downloadId.toString())
                     } catch (e: Exception) {
                         result.error("DOWNLOAD_ERROR", e.message, null)
+                    }
+                } else {
+                    result.notImplemented()
+                }
+            }
+        // ── Channel: Open URL in Browser ─────────────────────────────────────
+        // Langsung pakai Android Intent ACTION_VIEW, bypass url_launcher Pigeon
+        // yang channel-nya tidak terdaftar.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, BROWSER_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                if (call.method == "openUrl") {
+                    val url = call.argument<String>("url")
+                    if (url != null) {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            startActivity(intent)
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.error("BROWSER_ERROR", "Tidak bisa membuka URL: ${e.message}", null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGUMENT", "URL tidak boleh null", null)
                     }
                 } else {
                     result.notImplemented()

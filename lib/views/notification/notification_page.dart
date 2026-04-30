@@ -24,34 +24,32 @@ class _NotificationPageState extends State<NotificationPage> {
     if (!item.isRead) {
       context.read<NotificationBloc>().add(MarkNotificationRead(item.id));
     }
+    // Selalu tampilkan modal isi notifikasi dulu (Bug 2 fix)
+    _showInfoModal(context, item);
+  }
 
-    // Deep-link routing based on type
+  void _navigateByType(BuildContext context, NotificationItem item) {
+    Navigator.pop(context); // Tutup modal dulu
     switch (item.type) {
       case 'assignment':
-        // Buka tab Tugas (index 2) di main wrapper
         Navigator.pushNamed(context, '/student/tugas');
         break;
       case 'presence':
-      case 'class_start': // Notif kunci/kelas mulai redirect ke Presensi
-        // Buka tab Presensi (index 1) di main wrapper
+      case 'class_start':
         Navigator.pushNamed(context, '/student/presensi');
         break;
       case 'grade':
       case 'score':
-        // Buka dashboard utama (ada rekap nilai di sini)
-        Navigator.pushNamed(context, '/student/home');
-        break;
       case 'material':
-        // Materi – buka dashboard lalu user pilih matkul
         Navigator.pushNamed(context, '/student/home');
         break;
-      case 'announcement':
-      case 'general':
       default:
-        // Info only → tampilkan modal pesan lengkap
-        _showInfoModal(context, item);
         break;
     }
+  }
+
+  bool _hasNavigation(String type) {
+    return ['assignment', 'presence', 'class_start', 'grade', 'score', 'material'].contains(type);
   }
 
   void _showInfoModal(BuildContext context, NotificationItem item) {
@@ -122,21 +120,49 @@ class _NotificationPageState extends State<NotificationPage> {
               style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
             ),
             const Gap(20),
+            // Tombol redirect (jika type memiliki halaman tujuan)
+            if (_hasNavigation(item.type))
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _navigateByType(context, item),
+                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                  label: Text(
+                    item.type == 'assignment'
+                        ? 'Lihat Tugas'
+                        : item.type == 'presence' || item.type == 'class_start'
+                            ? 'Lihat Presensi'
+                            : 'Lihat Detail',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            const Gap(8),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: OutlinedButton(
                 onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: color,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: color.withOpacity(0.4)),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text('Tutup',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text('Tutup',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    )),
               ),
             ),
           ],

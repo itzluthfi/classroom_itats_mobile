@@ -1,6 +1,7 @@
 import 'package:classroom_itats_mobile/auth/bloc/auth/auth_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/academic_period/academic_period_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/notification/notification_bloc.dart';
+import 'package:classroom_itats_mobile/user/bloc/profile/profile_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/subject/subject.dart';
 import 'package:classroom_itats_mobile/user/repositories/academic_period_repository.dart';
 import 'package:classroom_itats_mobile/user/repositories/notification_repository.dart';
@@ -8,6 +9,7 @@ import 'package:classroom_itats_mobile/utils/semester_helper.dart';
 import 'package:classroom_itats_mobile/views/notification/notification_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentAppBar extends StatefulWidget implements PreferredSizeWidget {
@@ -399,7 +401,6 @@ class _StudentAppBarState extends State<StudentAppBar> {
                 // Profile Avatar (Clickable for logout/profile)
                 GestureDetector(
                   onTap: () {
-                    // Show simple bottom sheet or navigation
                     showModalBottomSheet(
                       context: context,
                       backgroundColor: Colors.transparent,
@@ -452,11 +453,49 @@ class _StudentAppBarState extends State<StudentAppBar> {
                                         horizontal: 24),
                                     child: Row(
                                       children: [
-                                        const CircleAvatar(
-                                          radius: 30,
-                                          backgroundColor: Color(0xFFF0B384),
-                                          child: Icon(Icons.person,
-                                              size: 35, color: Colors.white),
+                                        // Foto profil dari ProfileBloc
+                                        BlocBuilder<ProfileBloc, ProfileState>(
+                                          builder: (ctx, profileState) {
+                                            if (profileState is ProfileLoaded) {
+                                              final photo = profileState.profile.photo;
+                                              final webUrl = dotenv.get('WEB_URL', fallback: '');
+                                              final webProtocol = dotenv.get('WEB_PROTOCOL', fallback: 'https://');
+                                              final base = webUrl.startsWith('http') ? webUrl : '$webProtocol$webUrl';
+                                              final photoUrl = '$base/storage/img_mhs/$photo';
+                                              final hasPhoto = photo.isNotEmpty &&
+                                                  photo != 'null' &&
+                                                  photo != 'undefined' &&
+                                                  photo != 'default.png';
+                                              return CircleAvatar(
+                                                radius: 30,
+                                                backgroundColor: const Color(0xFFF0B384),
+                                                child: ClipOval(
+                                                  child: hasPhoto
+                                                      ? Image.network(
+                                                          photoUrl,
+                                                          width: 60,
+                                                          height: 60,
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder: (_, __, ___) => const Icon(
+                                                            Icons.person,
+                                                            size: 35,
+                                                            color: Colors.white,
+                                                          ),
+                                                        )
+                                                      : const Icon(
+                                                          Icons.person,
+                                                          size: 35,
+                                                          color: Colors.white,
+                                                        ),
+                                                ),
+                                              );
+                                            }
+                                            return const CircleAvatar(
+                                              radius: 30,
+                                              backgroundColor: Color(0xFFF0B384),
+                                              child: Icon(Icons.person, size: 35, color: Colors.white),
+                                            );
+                                          },
                                         ),
                                         const SizedBox(width: 16),
                                         Expanded(
@@ -522,12 +561,44 @@ class _StudentAppBarState extends State<StudentAppBar> {
                       },
                     );
                   },
-                  child: const CircleAvatar(
-                    radius: 20,
-                    backgroundColor:
-                        Color(0xFFF0B384), // Skin tone base color from image
-                    child: Icon(Icons.person,
-                        color: Colors.white), // Placeholder if no real image
+                  // Avatar di navbar — tampilkan foto profil jika tersedia
+                  child: BlocBuilder<ProfileBloc, ProfileState>(
+                    builder: (ctx, profileState) {
+                      if (profileState is ProfileLoaded) {
+                        final photo = profileState.profile.photo;
+                        final webUrl = dotenv.get('WEB_URL', fallback: '');
+                        final webProtocol = dotenv.get('WEB_PROTOCOL', fallback: 'https://');
+                        final base = webUrl.startsWith('http') ? webUrl : '$webProtocol$webUrl';
+                        final photoUrl = '$base/storage/img_mhs/$photo';
+                        final hasPhoto = photo.isNotEmpty &&
+                            photo != 'null' &&
+                            photo != 'undefined' &&
+                            photo != 'default.png';
+                        return CircleAvatar(
+                          radius: 20,
+                          backgroundColor: const Color(0xFFF0B384),
+                          child: ClipOval(
+                            child: hasPhoto
+                                ? Image.network(
+                                    photoUrl,
+                                    width: 40,
+                                    height: 40,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.person,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.person, color: Colors.white),
+                          ),
+                        );
+                      }
+                      return const CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Color(0xFFF0B384),
+                        child: Icon(Icons.person, color: Colors.white),
+                      );
+                    },
                   ),
                 ),
               ],

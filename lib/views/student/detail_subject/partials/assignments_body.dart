@@ -39,24 +39,26 @@ class _StudentAssignmentsBodyState extends State<StudentAssignmentsBody> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext sheetCtx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetCtx).viewInsets.bottom,
-          ),
-          child: Wrap(
-            children: [
-              Column(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 5,
-                    margin: const EdgeInsets.only(top: 12, bottom: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+        return DraggableScrollableSheet(
+          initialChildSize: 0.85,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (_, scrollCtrl) {
+            return Column(
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 5,
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  BlocProvider.value(
+                ),
+                Expanded(
+                  child: BlocProvider.value(
                     value: bloc,
                     child: UploadAssignmentBody(
                       screenWidth: screenWidth,
@@ -87,11 +89,10 @@ class _StudentAssignmentsBodyState extends State<StudentAssignmentsBody> {
                       ),
                     ),
                   ),
-                  const Gap(24),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            );
+          },
         );
       },
     ).then((_) {
@@ -103,11 +104,19 @@ class _StudentAssignmentsBodyState extends State<StudentAssignmentsBody> {
     });
   }
 
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
 
     return BlocBuilder<AssignmentBloc, AssignmentState>(
+      // Bug 10 fix: jangan rebuild saat state adalah loading/success dari download
+      // agar data assignment tidak hilang sementara
+      buildWhen: (prev, curr) {
+        if (curr is AssignmentFileDownloadLoading) return false;
+        if (curr is AssignmentFileDownloadSuccess) return false;
+        return true;
+      },
       builder: (context, state) {
         if (state is AssignmentLoading) {
           return const Center(child: CircularProgressIndicator());

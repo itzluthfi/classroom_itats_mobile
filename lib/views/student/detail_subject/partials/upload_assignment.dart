@@ -168,29 +168,34 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
         bool isLoading = state is CreateAssignmentLoading;
         bool isDownloading = state is AssignmentFileDownloadLoading;
 
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 24.0, 
-            right: 24.0, 
-            top: 16.0, 
-            bottom: 16.0 + MediaQuery.of(context).padding.bottom
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Center(
-                child: Text(
-                  _sudahSubmit ? "Lihat / Ubah Tugas" : "Unggah Tugas",
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
-                  ),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Scrollable Content Area ──
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  left: 24.0,
+                  right: 24.0,
+                  top: 16.0,
+                  bottom: 8.0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+            // Header
+            Center(
+              child: Text(
+                _sudahSubmit ? "Lihat / Ubah Tugas" : "Unggah Tugas",
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
                 ),
               ),
-              const Gap(16),
+            ),
+            const Gap(16),
 
               // ── SECTION: Judul & Instruksi Dosen ──
               if (widget.assignment != null) ...[ 
@@ -683,20 +688,36 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                   ),
                 ),
               ),
-              const Gap(32),
+                  ],
+                ),
+              ),
+            ),
 
-              // ── Tombol Aksi ──
-              Builder(
-                builder: (context) {
-                  final now = DateTime.now();
-                  final endTime = widget.assignment?.endTime?.toLocal() ?? widget.assignment?.dueDate.toLocal() ?? DateTime.now().add(const Duration(days: 1));
-                  final isExpired = now.isAfter(endTime);
+            // ── Sticky Footer: Tombol Aksi ──
+            Builder(
+              builder: (ctx2) {
+                final now = DateTime.now();
+                final endTime = widget.assignment?.endTime?.toLocal() ??
+                    widget.assignment?.dueDate.toLocal() ??
+                    DateTime.now().add(const Duration(days: 1));
+                final isExpired = now.isAfter(endTime);
 
-                  return Row(
+                return Container(
+                  padding: EdgeInsets.only(
+                    left: 24,
+                    right: 24,
+                    top: 12,
+                    bottom: 16 + MediaQuery.of(ctx2).padding.bottom,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(top: BorderSide(color: Colors.grey.shade100)),
+                  ),
+                  child: Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: isLoading ? null : () => Navigator.pop(context),
+                          onPressed: isLoading ? null : () => Navigator.pop(ctx2),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             side: BorderSide(color: Colors.grey.shade300),
@@ -721,7 +742,7 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                               : () {
                                   final path = _file!.path;
                                   final filename = _file!.path.split('/').last;
-                                  BlocProvider.of<AssignmentBloc>(context).add(
+                                  BlocProvider.of<AssignmentBloc>(ctx2).add(
                                     SubmitAssignment(
                                       assignmentId: widget.assignmentId,
                                       note: _noteController.text,
@@ -756,11 +777,11 @@ class _UploadAssignmentBodyState extends State<UploadAssignmentBody> {
                         ),
                       ),
                     ],
-                  );
-                }
-              ),
-            ],
-          ),
+                  ),
+                );
+              }
+            ),
+          ],
         );
       },
     );

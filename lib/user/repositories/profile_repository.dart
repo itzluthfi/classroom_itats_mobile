@@ -11,7 +11,6 @@ import 'package:classroom_itats_mobile/core/api_client.dart';
 class ProfileRepository {
   final storage = const FlutterSecureStorage(
       aOptions: AndroidOptions(encryptedSharedPreferences: true));
-  final _dio = Dio();
 
   Future<Profile> getStudentProfile(String academicPeriod) async {
     final value = await storage.read(key: "token");
@@ -51,7 +50,9 @@ class ProfileRepository {
       });
     }
 
-    _dio.httpClientAdapter = IOHttpClientAdapter(
+    // Gunakan Dio terpisah dengan SSL bypass untuk multipart upload ke web server
+    final uploadDio = Dio();
+    uploadDio.httpClientAdapter = IOHttpClientAdapter(
       createHttpClient: () {
         HttpClient client = HttpClient();
         client.badCertificateCallback =
@@ -62,19 +63,29 @@ class ProfileRepository {
       },
     );
 
-    Response response = await _dio.post(
-      "${dotenv.get("WEB_PROTOCOL")}${dotenv.get("WEB_URL")}/api/students/profile/update",
-      data: formData,
-      options: Options(
-        contentType: "application/x-www-form-urlencoded",
-        headers: {
-          "token": value,
-        },
-      ),
-    );
+    // Force HTTPS — hapus protocol dari WEB_URL jika ada, lalu tambahkan https://
+    final rawWebUrl = dotenv.get("WEB_URL", fallback: "").replaceAll(RegExp(r'^https?://'), '').trim();
+    final uploadUrl = "https://$rawWebUrl/api/students/profile/update";
 
-    final decodedData = response.statusCode ?? 0;
+    try {
+      Response response = await uploadDio.post(
+        uploadUrl,
+        data: formData,
+        options: Options(
+          contentType: "multipart/form-data",
+          validateStatus: (status) => status != null && status < 500,
+          headers: {
+            "token": value,
+            "Accept": "application/json",
+          },
+        ),
+      );
 
-    return decodedData;
+      return response.statusCode ?? 0;
+    } catch (e) {
+      print("[UPDATE PROFILE] Exception: $e");
+      return 0;
+    }
   }
+
 }

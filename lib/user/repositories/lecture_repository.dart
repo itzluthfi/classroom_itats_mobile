@@ -5,8 +5,10 @@ import 'package:classroom_itats_mobile/models/week.dart';
 import 'package:classroom_itats_mobile/core/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path_provider/path_provider.dart';
 
 class LectureRepository {
   final storage = const FlutterSecureStorage(
@@ -105,47 +107,69 @@ class LectureRepository {
   }
 
   Future<int> downloadMaterialFile(String fileLink) async {
-    Directory? downloadDir;
-
-    if (Platform.isAndroid) {
-      downloadDir = Directory("/storage/emulated/0/Download");
+    // === NORMALISASI URL ===
+    final String fullUrl;
+    if (fileLink.startsWith('http://') || fileLink.startsWith('https://')) {
+      fullUrl = fileLink;
+    } else {
+      final webHost = dotenv
+          .get('WEB_URL', fallback: '')
+          .replaceAll(RegExp(r'^https?://'), '')
+          .replaceAll('"', '')
+          .trim();
+      fullUrl = 'https://$webHost/storage/$fileLink';
     }
 
-    _dio.httpClientAdapter = IOHttpClientAdapter(
-      createHttpClient: () {
-        HttpClient client = HttpClient();
-        client.badCertificateCallback =
-            (X509Certificate cert, String host, int port) {
-          return true;
-        };
-        return client;
-      },
-    );
+    final fileName = fileLink.split('/').last;
+
+    print("[DOWNLOAD MATERIAL] URL asli  : $fileLink");
+    print("[DOWNLOAD MATERIAL] URL final : $fullUrl");
+    print("[DOWNLOAD MATERIAL] File name : $fileName");
 
     try {
-      Response response = await _dio.get(
-        "${dotenv.get("WEB_PROTOCOL")}${dotenv.get("WEB_URL")}/storage/$fileLink",
-        options: Options(
+      if (Platform.isAndroid) {
+        // Gunakan Android DownloadManager → menyimpan langsung ke
+        // /storage/emulated/0/Download/ tanpa permission apapun.
+        const channel = MethodChannel('com.itats.classroom/download');
+        final downloadId = await channel.invokeMethod<String>('downloadFile', {
+          'url': fullUrl,
+          'fileName': fileName,
+          'title': fileName,
+        });
+        print("[DOWNLOAD MATERIAL] DownloadManager ID: $downloadId");
+        return downloadId != null ? 200 : 500;
+      } else {
+        // iOS / Desktop: fallback ke Dio + app documents directory
+        final docsDir = await getApplicationDocumentsDirectory();
+        _dio.httpClientAdapter = IOHttpClientAdapter(
+          createHttpClient: () {
+            final client = HttpClient();
+            client.badCertificateCallback =
+                (X509Certificate cert, String host, int port) => true;
+            return client;
+          },
+        );
+        final response = await _dio.get(
+          fullUrl,
+          options: Options(
             responseType: ResponseType.bytes,
-            followRedirects: false,
-            validateStatus: (status) {
-              return status! == 200;
-            }),
-      );
-
-      List<String> filename = fileLink.split('/');
-      File file = File("${downloadDir!.path}/${filename.last}");
-
-      var raf = file.openSync(mode: FileMode.write);
-      // response.data is List<int> type
-      raf.writeFromSync(response.data);
-      await raf.close();
-
-      return response.statusCode ?? 404;
+            followRedirects: true,
+            validateStatus: (s) => s != null && s >= 200 && s < 300,
+          ),
+        );
+        final file = File('${docsDir.path}/$fileName');
+        final raf = file.openSync(mode: FileMode.write);
+        raf.writeFromSync(response.data);
+        await raf.close();
+        print("[DOWNLOAD MATERIAL] Berhasil (iOS)! Disimpan di: ${file.path}");
+        return response.statusCode ?? 200;
+      }
     } catch (e) {
+      print("[DOWNLOAD MATERIAL] Exception: $e");
       return 500;
     }
   }
+
 
   Future<Map<String, dynamic>?> getLectureRps(String mkId, String weekId) async {
     try {

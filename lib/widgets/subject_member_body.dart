@@ -57,21 +57,18 @@ class _SubjectMemberBodyState extends State<SubjectMemberBody> {
     _checkLoad();
   }
 
-  _checkLoad() async {
-    bool loaded = await widget.userRepository.getWidgetState('subject_member');
-    if (!loaded) {
-      setState(() {
-        BlocProvider.of<SubjectMemberBloc>(context).add(
-          GetSubjectMember(
-            academicPeriodId: widget.subject.academicPeriodId,
-            subjectId: widget.subject.subjectId,
-            subjectClass: widget.subject.subjectClass,
-            majorId: widget.subject.majorId,
-          ),
-        );
-      });
-      await widget.userRepository.setWidgetState('subject_member', true);
-    }
+  _checkLoad() {
+    // Selalu reload — flag global 'subject_member' menyebabkan data
+    // anggota matkul A tampil di matkul B.
+    if (!mounted) return;
+    BlocProvider.of<SubjectMemberBloc>(context).add(
+      GetSubjectMember(
+        academicPeriodId: widget.subject.academicPeriodId,
+        subjectId: widget.subject.subjectId,
+        subjectClass: widget.subject.subjectClass,
+        majorId: widget.subject.majorId,
+      ),
+    );
   }
 
   final TextEditingController _searchController = TextEditingController();

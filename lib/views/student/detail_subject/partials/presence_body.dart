@@ -33,19 +33,15 @@ class _StudentPresenceBodyState extends State<StudentPresenceBody> {
     _checkLoad();
   }
 
-  _checkLoad() async {
-    bool loaded =
-        await widget.userRepository.getWidgetState('student_presence');
-    if (!loaded) {
-      setState(() {
-        BlocProvider.of<LectureBloc>(context).add(GetStudentLecture(
-          academicPeriod: widget.subject.academicPeriodId,
-          subjectId: widget.subject.subjectId,
-          subjectClass: widget.subject.subjectClass,
-        ));
-      });
-      await widget.userRepository.setWidgetState('student_presence', true);
-    }
+  _checkLoad() {
+    // Selalu reload — flag per-subject tidak cukup karena LectureBloc global
+    // bisa punya state dari subject lain yang sudah Loaded.
+    if (!mounted) return;
+    BlocProvider.of<LectureBloc>(context).add(GetStudentLecture(
+      academicPeriod: widget.subject.academicPeriodId,
+      subjectId: widget.subject.subjectId,
+      subjectClass: widget.subject.subjectClass,
+    ));
   }
 
   @override

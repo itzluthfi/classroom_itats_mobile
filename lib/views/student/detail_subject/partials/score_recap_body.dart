@@ -25,17 +25,15 @@ class _StudentScoreRecapBodyState extends State<StudentScoreRecapBody> {
     _checkLoad();
   }
 
-  _checkLoad() async {
-    final currentState = BlocProvider.of<AssignmentBloc>(context).state;
-    if (currentState is! AssignmentLoaded) {
-      setState(() {
-        BlocProvider.of<AssignmentBloc>(context).add(GetStudentAssignmentScore(
-          academicPeriod: widget.subject.academicPeriodId,
-          subjectId: widget.subject.subjectId,
-          subjectClass: widget.subject.subjectClass,
-        ));
-      });
-    }
+  _checkLoad() {
+    // Selalu reload — cek 'state is! AssignmentLoaded' salah karena
+    // AssignmentBloc global bisa punya data Loaded dari subject lain.
+    if (!mounted) return;
+    BlocProvider.of<AssignmentBloc>(context).add(GetStudentAssignmentScore(
+      academicPeriod: widget.subject.academicPeriodId,
+      subjectId: widget.subject.subjectId,
+      subjectClass: widget.subject.subjectClass,
+    ));
   }
 
   @override

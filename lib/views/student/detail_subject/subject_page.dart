@@ -36,9 +36,22 @@ class _StudentSubjectPageState extends State<StudentSubjectPage>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Subject && _subject?.subjectId != args.subjectId) {
+      // Subject baru (atau pertama kali dibuka) → reset semua state
+      _subject = args;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _clearLoadedWidget();
+      });
+    }
+  }
+
+  @override
   void dispose() {
-    super.dispose();
     WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
@@ -50,18 +63,31 @@ class _StudentSubjectPageState extends State<StudentSubjectPage>
   }
 
   _clearLoadedWidget() async {
+    if (!mounted) return;
     context.read<PageIndexCubit>().pageClicked(0);
 
+    // Key lama (backward compat)
     await widget.userRepository.setWidgetState("student_material", false);
     await widget.userRepository.setWidgetState("forum", false);
     await widget.userRepository.setWidgetState("student_presence", false);
     await widget.userRepository.setWidgetState("student_score_recap", false);
     await widget.userRepository.setWidgetState("subject_member", false);
+
+    // Key baru per-subject (yang digunakan setelah perbaikan bug)
+    if (_subject != null) {
+      await widget.userRepository.setWidgetState(
+          'forum_${_subject!.activityMasterId}', false);
+      await widget.userRepository.setWidgetState(
+          'student_presence_${_subject!.subjectId}_${_subject!.subjectClass}', false);
+      await widget.userRepository.setWidgetState(
+          'subject_member_${_subject!.subjectId}', false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    _subject = ModalRoute.of(context)!.settings.arguments! as Subject;
+    // _subject sudah di-set di didChangeDependencies, tapi fallback aman jika belum
+    _subject ??= ModalRoute.of(context)!.settings.arguments! as Subject;
 
     return BlocConsumer<PageIndexCubit, int>(
         listener: (context, state) {},

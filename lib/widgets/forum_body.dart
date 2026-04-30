@@ -7,12 +7,12 @@ import 'package:classroom_itats_mobile/user/bloc/forum/forum_bloc.dart';
 import 'package:classroom_itats_mobile/user/bloc/lecture/lecture_bloc.dart';
 import 'package:classroom_itats_mobile/widgets/textfield.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ForumBody extends StatefulWidget {
   final Subject subject;
@@ -37,16 +37,14 @@ class _ForumBodyState extends State<ForumBody> {
   }
 
   _checkLoad() async {
-    bool loaded = await widget.userRepository.getWidgetState('forum');
-    if (!loaded) {
-      setState(() {
-        BlocProvider.of<ForumBloc>(context)
-            .add(GetForum(masterActivityId: widget.subject.activityMasterId));
-      });
-      await widget.userRepository.setWidgetState('forum', true);
-    }
+    // Selalu reload saat tab Forum dibuka — Bloc global bisa punya data subject lain.
+    // Flag per-subject tidak cukup karena Bloc state bisa stale dari navigasi sebelumnya.
+    if (!mounted) return;
+    BlocProvider.of<ForumBloc>(context)
+        .add(GetForum(masterActivityId: widget.subject.activityMasterId));
 
     String token = await widget.userRepository.getToken();
+    if (!mounted) return;
     user = await widget.userRepository.decodeTokenToUser(token);
   }
 
@@ -216,12 +214,19 @@ class _ForumBodyState extends State<ForumBody> {
     );
   }
 
-  Future<void> _launchInBrowser(Uri url) async {
-    if (!await launchUrl(
-      url,
-      mode: LaunchMode.externalApplication,
-    )) {
-      throw Exception('Could not launch $url');
+  // Helper: buka URL di browser Android via Intent langsung (bypass url_launcher)
+  static const _browserChannel = MethodChannel('com.itats.classroom/browser');
+
+  Future<void> _openInBrowser(String url) async {
+    // Normalisasi: tambah https:// jika belum ada scheme
+    String normalized = url;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      normalized = 'https://$url';
+    }
+    try {
+      await _browserChannel.invokeMethod('openUrl', {'url': normalized});
+    } catch (e) {
+      debugPrint('[BROWSER] Gagal membuka $normalized: $e');
     }
   }
 
@@ -294,14 +299,25 @@ class _ForumBodyState extends State<ForumBody> {
     List<Widget> announcementCards = List.empty(growable: true);
 
     for (var announcement in announcements) {
-      var htmlContent = announcement.postContent
-          .replaceAll("\\r", "")
-          .replaceAll("\\n", "")
-          .replaceAll("\\t", "")
-          .replaceFirst(r'"', '')
-          .replaceAll("\\", "");
+      // Fix Masalah 3: Unescape HTML dengan benar.
+      // Pendekatan lama (replaceAll("\\", "") + removeFirst('"')) MERUSAK
+      // href="..." menjadi href=... yang tidak valid sehingga link tidak bisa diklik.
+      // Pendekatan baru: hanya hilangkan JSON-wrapping quotes di luar, lalu
+      // unescape escaped quotes agar atribut HTML tetap valid.
+      var rawContent = announcement.postContent;
 
-      htmlContent = htmlContent.replaceFirst(r'"', '', htmlContent.length - 1);
+      // 1. Lepas outer JSON quote jika ada (misal: "\"<p>...</p>\"")
+      if (rawContent.startsWith('"') && rawContent.endsWith('"') && rawContent.length > 1) {
+        rawContent = rawContent.substring(1, rawContent.length - 1);
+      }
+
+      // 2. Unescape karakter yang di-escape oleh JSON serializer
+      var htmlContent = rawContent
+          .replaceAll('\\"', '"')   // \" → " (penting untuk href="url")
+          .replaceAll('\\r', '')    // carriage return
+          .replaceAll('\\n', '')    // newline
+          .replaceAll('\\t', '');   // tab
+      // Jangan hapus semua backslash lain — itu merusak href
 
       announcementCards.add(
         Center(
@@ -400,6 +416,10 @@ class _ForumBodyState extends State<ForumBody> {
                   child: HtmlWidget(
                     htmlContent,
                     textStyle: const TextStyle(fontSize: 15, height: 1.4),
+                    onTapUrl: (url) async {
+                      await _openInBrowser(url);
+                      return true; // handled: cegah fwfh_url_launcher double-launch
+                    },
                   ),
                 ),
                 const Gap(12),
@@ -688,9 +708,13 @@ class _ForumBodyState extends State<ForumBody> {
                           ),
                           const Gap(4),
                           HtmlWidget(
-                            comment.commentContent.replaceAll("\"", ""),
+                            comment.commentContent.replaceAll('"', ''),
                             textStyle: const TextStyle(
                                 fontSize: 14, color: Color(0xFF475569)),
+                            onTapUrl: (url) async {
+                              await _openInBrowser(url);
+                              return true;
+                            },
                           ),
                         ],
                       ),

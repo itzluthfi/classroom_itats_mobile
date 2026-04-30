@@ -5,9 +5,9 @@ import 'package:classroom_itats_mobile/user/bloc/forum/forum_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:flutter_quill/quill_delta.dart';
 import 'package:flutter_quill_delta_from_html/flutter_quill_delta_from_html.dart';
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CreateForumPage extends StatefulWidget {
   const CreateForumPage({super.key});
@@ -46,12 +46,26 @@ class _CreateForumPageState extends State<CreateForumPage> {
         if (_mapped?["announcement"] is Announcement) {
           _announcement = _mapped?["announcement"] as Announcement;
 
-          var delta = HtmlToDelta().convert(_announcement!.postContent);
-
-          var deltaJson = delta.toJson();
-
-          _controller.document = Document.fromDelta(Delta()
-            ..insert(deltaJson[0]["insert"].toString().replaceAll("\"", "")));
+          // Fix Masalah 1: Load Delta secara penuh (termasuk link & formatting),
+          // bukan hanya teks elemen pertama yang membuang semua atribut link.
+          try {
+            final rawContent = _announcement!.postContent;
+            // Bersihkan outer quote (JSON wrapping) jika ada
+            final cleanContent = (rawContent.startsWith('"') && rawContent.endsWith('"'))
+                ? rawContent.substring(1, rawContent.length - 1)
+                : rawContent;
+            // Unescape JSON-escaped HTML → kembalikan ke HTML valid
+            final htmlContent = cleanContent
+                .replaceAll('\\"', '"')
+                .replaceAll('\\r', '')
+                .replaceAll('\\n', '')
+                .replaceAll('\\t', '');
+            final delta = HtmlToDelta().convert(htmlContent);
+            _controller.document = Document.fromDelta(delta);
+          } catch (_) {
+            // Fallback ke plain text jika parsing gagal
+            _controller.document = Document();
+          }
         }
       }
     }
@@ -121,7 +135,11 @@ class _CreateForumPageState extends State<CreateForumPage> {
             configurations: QuillSimpleToolbarConfigurations(
               controller: _controller,
               embedButtons: FlutterQuillEmbeds.toolbarButtons(),
-              buttonOptions: const QuillSimpleToolbarButtonOptions(),
+              buttonOptions: const QuillSimpleToolbarButtonOptions(
+                linkStyle: QuillToolbarLinkStyleButtonOptions(
+                  dialogTheme: QuillDialogTheme(),
+                ),
+              ),
               sharedConfigurations: const QuillSharedConfigurations(),
             ),
           ),
@@ -135,6 +153,13 @@ class _CreateForumPageState extends State<CreateForumPage> {
                   expands: true,
                   scrollable: true,
                   checkBoxReadOnly: true,
+                  // Fix Masalah 4: link di editor bisa diklik
+                  onLaunchUrl: (url) async {
+                    final uri = Uri.tryParse(url);
+                    if (uri != null && await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
                 ),
               ),
             ),
