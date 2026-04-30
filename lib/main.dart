@@ -340,6 +340,12 @@ class MyApp extends StatelessWidget {
         "/login": (context) => LoginPage(userRepository: userRepository),
         "/student/home": (context) => StudentMainWrapper(
             academicPeriodRepository: academicPeriodRepository),
+        "/student/presensi": (context) => StudentMainWrapper(
+            academicPeriodRepository: academicPeriodRepository,
+            initialTabIndex: 1),
+        "/student/tugas": (context) => StudentMainWrapper(
+            academicPeriodRepository: academicPeriodRepository,
+            initialTabIndex: 2),
         "/student/subject": (context) => StudentSubjectPage(
               subjectRepository: subjectRepository,
               userRepository: userRepository,

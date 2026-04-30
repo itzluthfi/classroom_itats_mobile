@@ -107,6 +107,10 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       } else {
         emit(NotificationLoaded(notifications: const [], unreadCount: count));
       }
-    } catch (_) {}
+    } catch (e) {
+      // Jika gagal fetch count, pertahankan state lama agar badge tidak hilang mendadak
+      // ignore: avoid_print
+      print('[NotificationBloc] Gagal refresh unread count: $e');
+    }
   }
 }

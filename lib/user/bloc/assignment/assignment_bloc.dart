@@ -139,7 +139,8 @@ class AssignmentBloc extends Bloc<AssignmentEvent, AssignmentState> {
             if (savedPath != null) {
               await NotificationService().showNotification(
                   title: "Unduhan Berhasil",
-                  body: "File tersimpan di folder Download perangkat Anda.");
+                  body: "File tersimpan di folder Download perangkat Anda.",
+                  payload: savedPath);
             } else {
               await NotificationService().showNotification(
                   title: "Unduhan Gagal",
@@ -163,7 +164,8 @@ class AssignmentBloc extends Bloc<AssignmentEvent, AssignmentState> {
             if (savedPath != null) {
               await NotificationService().showNotification(
                   title: "Unduhan Berhasil",
-                  body: "File tugas tersimpan di folder Download perangkat Anda.");
+                  body: "File tugas tersimpan di folder Download perangkat Anda.",
+                  payload: savedPath);
             } else {
               await NotificationService().showNotification(
                   title: "Unduhan Gagal",

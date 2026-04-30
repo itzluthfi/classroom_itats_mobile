@@ -11,6 +11,7 @@ import 'package:classroom_itats_mobile/views/student/detail_subject/partials/ass
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class StudentMaterialsBody extends StatefulWidget {
@@ -397,8 +398,9 @@ class _WeeklyCardState extends State<_WeeklyCard> {
               runSpacing: 12,
               children: [
                 // Materi Button
-                ElevatedButton.icon(
-                  onPressed: () {
+                if (_hasMaterials)
+                  ElevatedButton.icon(
+                    onPressed: () {
                     showModalBottomSheet<void>(
                       useSafeArea: true,
                       showDragHandle: true,
@@ -558,23 +560,61 @@ class _WeeklyCardState extends State<_WeeklyCard> {
 
                 // Hybrid Button (only show if it's NOT offline)
                 if (lecture != null && lecture.collegeType != 1)
-                  ElevatedButton.icon(
-                    onPressed: lecture.linkMeet != null &&
-                            lecture.linkMeet!.isNotEmpty
-                        ? () => _launchInBrowser(Uri.parse(lecture.linkMeet!))
-                        : null,
-                    icon: const Icon(Icons.videocam, size: 18),
-                    label: const Text("Hybrid"),
-                    style: ElevatedButton.styleFrom(
-                      elevation: 0,
-                      backgroundColor: const Color(0xFF9032EB),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                  if (lecture.linkMeet != null && lecture.linkMeet!.isNotEmpty)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () => _launchInBrowser(Uri.parse(lecture.linkMeet!)),
+                          icon: const Icon(Icons.videocam, size: 18),
+                          label: const Text("Hybrid"),
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            backgroundColor: const Color(0xFF9032EB),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.horizontal(left: Radius.circular(12))),
+                          ),
+                        ),
+                        Container(width: 1, height: 42, color: Colors.white.withOpacity(0.5)),
+                        ElevatedButton(
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: lecture.linkMeet!));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Link berhasil disalin!'), 
+                                duration: Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
+                                backgroundColor: Color(0xFF10B981),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            backgroundColor: const Color(0xFF9032EB),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.horizontal(right: Radius.circular(12))),
+                          ),
+                          child: const Icon(Icons.copy, size: 18),
+                        ),
+                      ],
+                    )
+                  else
+                    ElevatedButton.icon(
+                      onPressed: null,
+                      icon: const Icon(Icons.videocam, size: 18),
+                      label: const Text("Hybrid"),
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        disabledBackgroundColor: Colors.grey.shade300,
+                        disabledForegroundColor: Colors.grey.shade500,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
-                  ),
 
                 // Rekaman Button (only show if it's NOT offline and link exists)
                 if (lecture != null &&

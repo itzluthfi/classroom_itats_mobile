@@ -1,5 +1,6 @@
 import 'package:classroom_itats_mobile/models/user.dart';
 import 'package:classroom_itats_mobile/services/encyription_service.dart';
+import 'package:classroom_itats_mobile/core/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -9,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class UserRepository {
   final storage = const FlutterSecureStorage(
       aOptions: AndroidOptions(encryptedSharedPreferences: true));
-  final _dio = Dio();
+  final _dio = ApiClient.instance.dio;
   final EncryptionService encryptionService = EncryptionService();
 
   Future<bool> hasToken() async {
@@ -66,7 +67,7 @@ class UserRepository {
     var hashedPass = await encryptionService.makeNewHash(pass);
 
     Response response = await _dio.post(
-      "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/login",
+      "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/masuk",
       data: {
         "name": name,
         "pass": hashedPass,
@@ -89,7 +90,7 @@ class UserRepository {
     print("===========================================");
 
     Response response = await _dio.put(
-      "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/login/info",
+      "${dotenv.get("API_PROTOCOL")}${dotenv.get("API_URL")}${dotenv.get("API_BASEPATH")}/masuk/info",
       data: {
         "mobile_token": fbt,
       },

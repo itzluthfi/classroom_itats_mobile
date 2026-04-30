@@ -1,15 +1,11 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:open_filex/open_filex.dart';
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
   Future<void> initNotification() async {
-    // notificationsPlugin
-    //     .resolvePlatformSpecificImplementation<
-    //         AndroidFlutterLocalNotificationsPlugin>()!
-    //     .requestNotificationsPermission();
-
     AndroidInitializationSettings androidInitializationSettings =
         const AndroidInitializationSettings("@mipmap/classroom_logo");
 
@@ -25,7 +21,14 @@ class NotificationService {
 
     await notificationsPlugin.initialize(initializationSettings,
         onDidReceiveNotificationResponse:
-            (NotificationResponse notificationResponse) async {});
+            (NotificationResponse notificationResponse) async {
+          final payload = notificationResponse.payload;
+          if (payload != null && payload.isNotEmpty) {
+            try {
+              await OpenFilex.open(payload);
+            } catch (_) {}
+          }
+        });
   }
 
   notificationDetails() {
@@ -42,6 +45,7 @@ class NotificationService {
   Future showNotification(
       {int id = 0, String? title, String? body, String? payload}) async {
     return notificationsPlugin.show(
-        id, title, body, await notificationDetails());
+        id, title, body, await notificationDetails(),
+        payload: payload);
   }
 }

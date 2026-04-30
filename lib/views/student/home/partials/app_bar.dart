@@ -84,8 +84,8 @@ class _StudentAppBarState extends State<StudentAppBar> {
                 if (widget.showBackButton) const SizedBox(width: 8),
                 Image.asset(
                   "assets/application_images/Logo_Classroom_Square-no_bg.png",
-                  height: 32,
-                  width: 32,
+                  height: 40,
+                  width: 40,
                   fit: BoxFit.contain,
                 ),
               ],
@@ -416,7 +416,12 @@ class _StudentAppBarState extends State<StudentAppBar> {
                             }
 
                             return Container(
-                              margin: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                              margin: EdgeInsets.fromLTRB(
+                                20,
+                                0,
+                                20,
+                                MediaQuery.of(context).padding.bottom + 80,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(32),

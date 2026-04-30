@@ -15,3 +15,5 @@ class LoadActivePresences extends PresensiEvent {
   @override
   List<Object> get props => [academicPeriod];
 }
+
+class ClearPresences extends PresensiEvent {}

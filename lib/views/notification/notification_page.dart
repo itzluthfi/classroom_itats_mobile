@@ -28,15 +28,121 @@ class _NotificationPageState extends State<NotificationPage> {
     // Deep-link routing based on type
     switch (item.type) {
       case 'assignment':
-        Navigator.pushNamed(context, '/student/assignments');
+        // Buka tab Tugas (index 2) di main wrapper
+        Navigator.pushNamed(context, '/student/tugas');
         break;
       case 'presence':
+      case 'class_start': // Notif kunci/kelas mulai redirect ke Presensi
+        // Buka tab Presensi (index 1) di main wrapper
+        Navigator.pushNamed(context, '/student/presensi');
+        break;
+      case 'grade':
+      case 'score':
+        // Buka dashboard utama (ada rekap nilai di sini)
         Navigator.pushNamed(context, '/student/home');
         break;
+      case 'material':
+        // Materi – buka dashboard lalu user pilih matkul
+        Navigator.pushNamed(context, '/student/home');
+        break;
+      case 'announcement':
+      case 'general':
       default:
-        // general / announcement → stay on page
+        // Info only → tampilkan modal pesan lengkap
+        _showInfoModal(context, item);
         break;
     }
+  }
+
+  void _showInfoModal(BuildContext context, NotificationItem item) {
+    final color = _colorForType(item.type);
+    final icon = _iconForType(item.type);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        margin: EdgeInsets.fromLTRB(
+          16, 0, 16, MediaQuery.of(context).padding.bottom + 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const Gap(20),
+            Row(
+              children: [
+                Container(
+                  width: 48, height: 48,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, size: 26, color: color),
+                ),
+                const Gap(14),
+                Expanded(
+                  child: Text(
+                    item.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Gap(16),
+            Text(
+              item.body,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+                height: 1.6,
+              ),
+            ),
+            const Gap(12),
+            Text(
+              _formatTime(item.createdAt),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+            ),
+            const Gap(20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: color,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text('Tutup',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -177,7 +283,62 @@ class _NotificationPageState extends State<NotificationPage> {
       ),
     );
   }
+
+  // Helper methods shared with _NotificationCard
+  static IconData _iconForType(String type) {
+    switch (type) {
+      case 'assignment':
+        return Icons.assignment_rounded;
+      case 'presence':
+        return Icons.fact_check_rounded;
+      case 'class_start':
+        return Icons.meeting_room_rounded;
+      case 'announcement':
+        return Icons.campaign_rounded;
+      case 'grade':
+      case 'score':
+        return Icons.bar_chart_rounded;
+      case 'material':
+        return Icons.menu_book_rounded;
+      case 'general':
+      default:
+        return Icons.info_rounded;
+    }
+  }
+
+  static Color _colorForType(String type) {
+    switch (type) {
+      case 'assignment':
+        return const Color(0xFF3B82F6);
+      case 'presence':
+        return const Color(0xFF10B981);
+      case 'class_start':
+        return const Color(0xFFEF4444); // Merah untuk penanda urgency kelas dimulai
+      case 'announcement':
+        return const Color(0xFFF59E0B);
+      case 'grade':
+      case 'score':
+        return const Color(0xFFEC4899);
+      case 'material':
+        return const Color(0xFF8B5CF6);
+      case 'general':
+      default:
+        return const Color(0xFF64748B);
+    }
+  }
+
+  static String _formatTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt.toLocal());
+    if (diff.inMinutes < 1) return 'Baru saja';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} menit yang lalu';
+    if (diff.inHours < 24) return '${diff.inHours} jam yang lalu';
+    if (diff.inDays == 1) return 'Kemarin';
+    if (diff.inDays < 7) return '${diff.inDays} hari yang lalu';
+    return DateFormat('d MMM yyyy', 'id_ID').format(dt.toLocal());
+  }
 }
+
 
 // ─── Notification Card ────────────────────────────────────────────────────────
 class _NotificationCard extends StatelessWidget {
@@ -188,9 +349,9 @@ class _NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = _iconForType(item.type);
-    final color = _colorForType(item.type);
-    final timeStr = _formatTime(item.createdAt);
+    final icon = _NotificationPageState._iconForType(item.type);
+    final color = _NotificationPageState._colorForType(item.type);
+    final timeStr = _NotificationPageState._formatTime(item.createdAt);
 
     return GestureDetector(
       onTap: onTap,
@@ -289,42 +450,5 @@ class _NotificationCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  IconData _iconForType(String type) {
-    switch (type) {
-      case 'assignment':
-        return Icons.assignment_rounded;
-      case 'presence':
-        return Icons.how_to_reg_rounded;
-      case 'announcement':
-        return Icons.campaign_rounded;
-      default:
-        return Icons.notifications_rounded;
-    }
-  }
-
-  Color _colorForType(String type) {
-    switch (type) {
-      case 'assignment':
-        return const Color(0xFF3B82F6);
-      case 'presence':
-        return const Color(0xFF10B981);
-      case 'announcement':
-        return const Color(0xFFF59E0B);
-      default:
-        return const Color(0xFF8B5CF6);
-    }
-  }
-
-  String _formatTime(DateTime dt) {
-    final now = DateTime.now();
-    final diff = now.difference(dt.toLocal());
-    if (diff.inMinutes < 1) return 'Baru saja';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} menit yang lalu';
-    if (diff.inHours < 24) return '${diff.inHours} jam yang lalu';
-    if (diff.inDays == 1) return 'Kemarin';
-    if (diff.inDays < 7) return '${diff.inDays} hari yang lalu';
-    return DateFormat('d MMM yyyy', 'id_ID').format(dt.toLocal());
   }
 }

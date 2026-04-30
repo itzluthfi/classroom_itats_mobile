@@ -65,6 +65,7 @@ class CustomAlertDialog extends StatefulWidget {
   final Subject subject;
   final double screenWidth;
   final Lecture lecture;
+
   const CustomAlertDialog({
     super.key,
     required this.subject,
@@ -76,107 +77,179 @@ class CustomAlertDialog extends StatefulWidget {
   State<CustomAlertDialog> createState() => _CustomAlertDialogState();
 }
 
-class _CustomAlertDialogState extends State<CustomAlertDialog>
-    with WidgetsBindingObserver {
-  Object? presence;
+class _CustomAlertDialogState extends State<CustomAlertDialog> {
+  List<Map<String, dynamic>> answer = [];
+  List<StudentAnswer?> controller = [];
   int presenceScore = 0;
-  List<Map<String, dynamic>> answer = List.empty(growable: true);
-  List<StudentAnswer?> controller = List.empty(growable: true);
+  Map<String, dynamic>? presence;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    BlocProvider.of<PresenceBloc>(context).add(
+    context.read<PresenceBloc>().add(
         GetPresenceQuestion(academicPeriod: widget.subject.academicPeriodId));
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Column(
-        children: [
-          Text(
-            'Presensi Mahasiswa',
-            style: TextStyle(
-              fontSize: 28,
-            ),
-          ),
-        ],
-      ),
-      content: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          BlocConsumer<PresenceBloc, PresenceState>(listener: (context, state) {
-            if (state is PresenceLoadFailed) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Gagal Menampilkan Pertanyaan Presensi'),
-                  duration: const Duration(milliseconds: 1500),
-                  width: 280.0, // Width of the SnackBar.
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10.0,
-                    vertical: 8.0, // Inner padding for SnackBar content.
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      elevation: 10,
+      backgroundColor: Colors.white,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+      child: Container(
+        padding: const EdgeInsets.all(24.0),
+        constraints: BoxConstraints(
+          maxWidth: 500,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E3A8A).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
+                  child: const Icon(
+                    Icons.assignment_turned_in_rounded,
+                    color: Color(0xFF1E3A8A),
+                    size: 28,
                   ),
                 ),
-              );
-            }
-            if (state is PresenceLoaded) {
-              setState(() {
-                answer = List.filled(state.presenceQuestions.length, {});
-                controller = List.generate(state.presenceQuestions.length,
-                    (index) => StudentAnswer.none);
-              });
-            }
-          }, builder: (context, state) {
-            if (state is PresenceLoaded) {
-              return SafeArea(
-                child: SizedBox(
-                  width: widget.screenWidth * 0.6795,
-                  child: ListView.separated(
-                    controller: ScrollController(),
-                    scrollDirection: Axis.vertical,
-                    itemCount: state.presenceQuestions.length,
-                    itemBuilder: (context, index) {
-                      return Column(
-                        children: [
-                          Row(
-                            children: [
-                              SizedBox(
-                                width: widget.screenWidth * 0.679,
-                                child: Text(
-                                  textAlign: TextAlign.justify,
-                                  state.presenceQuestions[index].question,
-                                  maxLines: 3,
-                                  style: const TextStyle(fontSize: 18),
-                                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                    'Presensi Mahasiswa',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF1E293B),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context, 'Cancel'),
+                  icon: const Icon(Icons.close, color: Color(0xFF64748B)),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.grey.shade100,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                )
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(color: Color(0xFFF1F5F9), thickness: 1.5),
+            const SizedBox(height: 12),
+
+            // Content Area
+            Expanded(
+              child: BlocConsumer<PresenceBloc, PresenceState>(
+                listener: (context, state) {
+                  if (state is PresenceLoadFailed) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Gagal Menampilkan Pertanyaan Presensi'),
+                        duration: const Duration(milliseconds: 1500),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                      ),
+                    );
+                  }
+                  if (state is PresenceLoaded) {
+                    setState(() {
+                      if (answer.isEmpty ||
+                          answer.length != state.presenceQuestions.length) {
+                        answer = List.generate(
+                            state.presenceQuestions.length,
+                            (index) => {
+                                  "lecture_id": widget.lecture.lectureID!,
+                                  "presence_question_id": state
+                                      .presenceQuestions[index].masterQuestionId,
+                                  "answer": 1,
+                                  "created_at":
+                                      "${DateTime.now().toLocal().toIso8601String()}Z",
+                                  "updated_at":
+                                      "${DateTime.now().toLocal().toIso8601String()}Z",
+                                });
+                        controller = List.generate(
+                            state.presenceQuestions.length,
+                            (index) => StudentAnswer.ya);
+                        presenceScore = state.presenceQuestions.length;
+                      }
+                    });
+                  }
+                },
+                builder: (context, state) {
+                  if (state is PresenceLoaded) {
+                    return Scrollbar(
+                      controller: _scrollController,
+                      thumbVisibility: true,
+                      thickness: 4,
+                      radius: const Radius.circular(10),
+                      child: ListView.separated(
+                        controller: _scrollController,
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.only(right: 12.0),
+                        itemCount: state.presenceQuestions.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 20),
+                        itemBuilder: (context, index) {
+                          final isSelectedYa =
+                              controller[index] == StudentAnswer.ya;
+                          final isSelectedTidak =
+                              controller[index] == StudentAnswer.tidak;
+
+                          return Container(
+                            padding: const EdgeInsets.all(16.0),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                                width: 1,
                               ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Column(
-                                children: [
-                                  SizedBox(
-                                    width: widget.screenWidth * 0.315,
-                                    child: ListTile(
-                                      title: const Text(
-                                        'Ya',
-                                        maxLines: 1,
-                                      ),
-                                      leading: Radio<StudentAnswer?>(
-                                        materialTapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
-                                        visualDensity:
-                                            const VisualDensity(horizontal: -4),
-                                        value: StudentAnswer.ya,
-                                        groupValue: controller[index],
-                                        onChanged: (StudentAnswer? value) {
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "${index + 1}. ${state.presenceQuestions[index].question}",
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF334155),
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildOptionButton(
+                                        label: 'Ya',
+                                        icon: Icons.check_circle_outline,
+                                        isSelected: isSelectedYa,
+                                        activeColor: const Color(0xFF10B981), // Emerald Green
+                                        onTap: () {
                                           setState(() {
-                                            controller[index] = value;
+                                            if (controller[index] !=
+                                                StudentAnswer.ya) {
+                                              presenceScore += 1;
+                                            }
+                                            controller[index] =
+                                                StudentAnswer.ya;
                                             answer[index] = {
                                               "lecture_id":
                                                   widget.lecture.lectureID!,
@@ -189,33 +262,25 @@ class _CustomAlertDialogState extends State<CustomAlertDialog>
                                               "updated_at":
                                                   "${DateTime.now().toLocal().toIso8601String()}Z",
                                             };
-                                            presenceScore += 1;
                                           });
                                         },
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              Column(
-                                children: [
-                                  SizedBox(
-                                    width: widget.screenWidth * 0.36,
-                                    child: ListTile(
-                                      title: const Text(
-                                        'Tidak',
-                                        maxLines: 1,
-                                      ),
-                                      leading: Radio<StudentAnswer?>(
-                                        materialTapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
-                                        visualDensity:
-                                            const VisualDensity(horizontal: -4),
-                                        value: StudentAnswer.tidak,
-                                        groupValue: controller[index],
-                                        onChanged: (StudentAnswer? value) {
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _buildOptionButton(
+                                        label: 'Tidak',
+                                        icon: Icons.cancel_outlined,
+                                        isSelected: isSelectedTidak,
+                                        activeColor: const Color(0xFFEF4444), // Crimson Red
+                                        onTap: () {
                                           setState(() {
-                                            controller[index] = value;
+                                            if (controller[index] ==
+                                                StudentAnswer.ya) {
+                                              presenceScore -= 1;
+                                            }
+                                            controller[index] =
+                                                StudentAnswer.tidak;
                                             answer[index] = {
                                               "lecture_id":
                                                   widget.lecture.lectureID!,
@@ -232,65 +297,143 @@ class _CustomAlertDialogState extends State<CustomAlertDialog>
                                         },
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      );
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  } else {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF1E3A8A),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Submit Button
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF1E3A8A).withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
+                onPressed: () {
+                  presence = {
+                    "presence_student": <String, dynamic>{
+                      "academic_period_id": widget.subject.academicPeriodId,
+                      "subject_id": widget.subject.subjectId,
+                      "major_id": widget.subject.majorId,
+                      "subject_class": widget.subject.subjectClass,
+                      "college_schedule":
+                          "${widget.lecture.lectureSchedule!.toLocal().toIso8601String()}Z",
+                      "is_present": true,
+                      "college_type": widget.lecture.lectureType,
+                      "hour_id": widget.lecture.hourID,
+                      "week_id": widget.lecture.weekID,
+                      "is_offline": true,
+                      "score": presenceScore,
                     },
-                    separatorBuilder: (context, index) {
-                      return const Divider();
-                    },
+                    "presence_answers": answer,
+                  };
+                  setState(() {
+                    BlocProvider.of<PresenceBloc>(context, listen: false)
+                        .add(SetStudentPresence(studentPresence: presence!));
+                    BlocProvider.of<LectureBloc>(context).add(GetStudentLecture(
+                      academicPeriod: widget.subject.academicPeriodId,
+                      subjectId: widget.subject.subjectId,
+                      subjectClass: widget.subject.subjectClass,
+                    ));
+                  });
+
+                  Navigator.pop(context, "OK");
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-              );
-            } else {
-              return const Column();
-            }
-          }),
-        ],
+                child: const Text(
+                  'Simpan Presensi',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.pop(context, 'Cancel'),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () {
-            presence = {
-              "presence_student": <String, dynamic>{
-                "academic_period_id": widget.subject.academicPeriodId,
-                "subject_id": widget.subject.subjectId,
-                "major_id": widget.subject.majorId,
-                "subject_class": widget.subject.subjectClass,
-                "college_schedule":
-                    "${widget.lecture.lectureSchedule!.toLocal().toIso8601String()}Z",
-                "is_present": true,
-                "college_type": widget.lecture.lectureType,
-                "hour_id": widget.lecture.hourID,
-                "week_id": widget.lecture.weekID,
-                "is_offline": true,
-                "score": presenceScore,
-              },
-              "presence_answers": answer,
-            };
-            setState(() {
-              BlocProvider.of<PresenceBloc>(context, listen: false)
-                  .add(SetStudentPresence(studentPresence: presence!));
-              BlocProvider.of<LectureBloc>(context).add(GetStudentLecture(
-                academicPeriod: widget.subject.academicPeriodId,
-                subjectId: widget.subject.subjectId,
-                subjectClass: widget.subject.subjectClass,
-              ));
-            });
+    );
+  }
 
-            Navigator.pop(context, "OK");
-          },
-          child: const Text('OK'),
+  Widget _buildOptionButton({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required Color activeColor,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            color: isSelected ? activeColor.withOpacity(0.12) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? activeColor : const Color(0xFFCBD5E1),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: isSelected ? activeColor : const Color(0xFF64748B),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? activeColor : const Color(0xFF475569),
+                ),
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 }

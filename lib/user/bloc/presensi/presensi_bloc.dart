@@ -10,6 +10,10 @@ class PresensiBloc extends Bloc<PresensiEvent, PresensiState> {
   final PresensiRepository presensiRepository;
 
   PresensiBloc({required this.presensiRepository}) : super(PresensiInitial()) {
+    on<ClearPresences>((event, emit) {
+      emit(PresensiLoading());
+    });
+
     on<LoadActivePresences>((event, emit) async {
       emit(PresensiLoading());
       try {

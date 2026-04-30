@@ -7,7 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:classroom_itats_mobile/views/student/home/partials/app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
+import 'package:table_calendar/table_calendar.dart';
 
 class StudentTugasPage extends StatefulWidget {
   final AcademicPeriodRepository? academicPeriodRepository;
@@ -26,6 +27,12 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
   final TextEditingController _searchController = TextEditingController();
 
   String _selectedStatusFilter = 'Belum';
+  bool _isFetching = true;
+
+  // Calendar State
+  bool _isCalendarView = false;
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
 
   // Get status options
   final List<String> _statusOptions = [
@@ -50,8 +57,15 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
     final periodState = context.read<AcademicPeriodBloc>().state;
     if (periodState is AcademicPeriodLoaded &&
         periodState.currentAcademicPeriod.isNotEmpty) {
+      setState(() {
+        _isFetching = true;
+      });
       context.read<AssignmentBloc>().add(
             GetActiveAssignments(period: periodState.currentAcademicPeriod));
+    } else {
+      setState(() {
+        _isFetching = false;
+      });
     }
   }
 
@@ -62,6 +76,7 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
   }
 
   int _getBadgeCount(String filter) {
+    if (_isFetching) return 0; // Return 0 during fetch for clean UI or keep old?
     if (filter == 'Semua') {
       return _allAssignments.length;
     } else if (filter == 'Belum') {
@@ -126,8 +141,13 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
             listener: (context, state) {
               if (state is AssignmentLoaded) {
                 setState(() {
+                  _isFetching = false;
                   _allAssignments = state.assignments;
                   _filterData();
+                });
+              } else if (state is AssignmentLoadFailed) {
+                setState(() {
+                  _isFetching = false;
                 });
               }
             },
@@ -166,7 +186,7 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                     children: [
                       Expanded(
                         child: Text(
-                          "Tugas Aktif (${_getBadgeCount('Semua')})",
+                          "Tugas Aktif ${_isFetching ? '' : '(${_getBadgeCount('Semua')})'}",
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
@@ -219,46 +239,79 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                 // Bagian Search Bar Custom
                 Container(
                   color: const Color(0xFFF8FAFC),
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: "Cari tugas atau matakuliah...",
-                        hintStyle: TextStyle(
-                            color: Colors.grey.shade400, fontSize: 14),
-                        prefixIcon:
-                            const Icon(Icons.search, color: Color(0xFF14307E)),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                            vertical: 14, horizontal: 20),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: const BorderSide(
-                              color: Color(0xFF14307E), width: 1.5),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                spreadRadius: 1,
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: "Cari tugas atau matakuliah...",
+                              hintStyle: TextStyle(
+                                  color: Colors.grey.shade400, fontSize: 14),
+                              prefixIcon:
+                                  const Icon(Icons.search, color: Color(0xFF14307E)),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 14, horizontal: 20),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide(color: Colors.grey.shade200),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide(color: Colors.grey.shade200),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFF14307E), width: 1.5),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const Gap(12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: _isCalendarView ? const Color(0xFF14307E) : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _isCalendarView = !_isCalendarView;
+                            });
+                          },
+                          icon: Icon(
+                            _isCalendarView ? Icons.list_alt_rounded : Icons.calendar_month_rounded,
+                            color: _isCalendarView ? Colors.white : const Color(0xFF14307E),
+                          ),
+                          tooltip: _isCalendarView ? "Mode List" : "Mode Kalender",
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
@@ -275,27 +328,29 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(filter),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: _selectedStatusFilter == filter
-                                      ? Colors.white.withOpacity(0.2)
-                                      : Colors.blueGrey.shade50,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  _getBadgeCount(filter).toString(),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                              if (!_isFetching) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
                                     color: _selectedStatusFilter == filter
-                                        ? Colors.white
-                                        : Colors.blueGrey.shade700,
+                                        ? Colors.white.withOpacity(0.2)
+                                        : Colors.blueGrey.shade50,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    _getBadgeCount(filter).toString(),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: _selectedStatusFilter == filter
+                                          ? Colors.white
+                                          : Colors.blueGrey.shade700,
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                           selected: _selectedStatusFilter == filter,
@@ -334,9 +389,20 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
                 Expanded(
                   child: BlocBuilder<AssignmentBloc, AssignmentState>(
                     builder: (context, state) {
-                      if (state is AssignmentLoading) {
-                        return const Center(child: CircularProgressIndicator());
+                      if (state is AssignmentLoading || _isFetching) {
+                        return ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          itemCount: 4,
+                          itemBuilder: (context, index) {
+                            return _buildSkeletonCard(context);
+                          },
+                        );
                       }
+                      
+                      if (_isCalendarView) {
+                        return _buildCalendarView();
+                      }
+
                       return _filteredAssignments.isEmpty
                           ? Center(
                               child: Text(
@@ -361,6 +427,241 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
             ),
           ),
         ));
+  }
+
+  List<Assignment> _getAssignmentsForDay(DateTime day) {
+    // Gunakan _filteredAssignments agar titik merah berubah sesuai filter atas!
+    return _filteredAssignments.where((item) {
+      return isSameDay(item.dueDate, day);
+    }).toList();
+  }
+
+  void _showDailyAssignmentsModal(BuildContext context, DateTime day, List<Assignment> assignments) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: const BoxDecoration(
+            color: Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              const Gap(12),
+              Container(
+                width: 40,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const Gap(16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today_rounded, color: Color(0xFF14307E), size: 24),
+                    const Gap(12),
+                    Text(
+                      DateFormat('dd MMMM yyyy').format(day),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF14307E).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "${assignments.length} Tugas",
+                        style: const TextStyle(color: Color(0xFF14307E), fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(16),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: assignments.length,
+                  itemBuilder: (ctx, idx) => _buildTugasCard(assignments[idx]),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCalendarView() {
+    return SingleChildScrollView(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: 5,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: TableCalendar<Assignment>(
+          firstDay: DateTime.utc(2020, 10, 16),
+          lastDay: DateTime.utc(2030, 3, 14),
+          focusedDay: _focusedDay,
+          selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+          onDaySelected: (selectedDay, focusedDay) {
+            setState(() {
+              _selectedDay = selectedDay;
+              _focusedDay = focusedDay;
+            });
+            
+            final dailyAssignments = _getAssignmentsForDay(selectedDay);
+            if (dailyAssignments.isNotEmpty) {
+              _showDailyAssignmentsModal(context, selectedDay, dailyAssignments);
+            }
+          },
+          eventLoader: _getAssignmentsForDay,
+          headerStyle: const HeaderStyle(
+            formatButtonVisible: false,
+            titleCentered: true,
+            titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF14307E)),
+            leftChevronIcon: Icon(Icons.chevron_left_rounded, color: Color(0xFF14307E)),
+            rightChevronIcon: Icon(Icons.chevron_right_rounded, color: Color(0xFF14307E)),
+          ),
+          calendarStyle: const CalendarStyle(
+            outsideDaysVisible: false,
+            markerDecoration: BoxDecoration(
+              color: Color(0xFFEF4444), // Merah penanda tugas
+              shape: BoxShape.circle,
+            ),
+            selectedDecoration: BoxDecoration(
+              color: Color(0xFF14307E),
+              shape: BoxShape.circle,
+            ),
+            todayDecoration: BoxDecoration(
+              color: Color(0xFF93A5CF),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonCard(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ShimmerEffect(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 150,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const Gap(8),
+                        Container(
+                          width: 200,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Gap(8),
+                  Container(
+                    width: 60,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ],
+              ),
+              const Gap(16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade100),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(width: 14, height: 14, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white)),
+                        const Gap(6),
+                        Container(width: 150, height: 12, color: Colors.white),
+                        const Spacer(),
+                        Container(width: 60, height: 12, color: Colors.white),
+                      ],
+                    ),
+                    const Gap(8),
+                    Row(
+                      children: [
+                        Container(width: 14, height: 14, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white)),
+                        const Gap(6),
+                        Container(width: 180, height: 12, color: Colors.white),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(16),
+              Container(
+                width: double.infinity,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildTugasCard(Assignment data) {
@@ -785,5 +1086,72 @@ class _StudentTugasPageState extends State<StudentTugasPage> {
         bloc.add(GetActiveAssignments(period: period));
       }
     });
+  }
+}
+
+class ShimmerEffect extends StatefulWidget {
+  final Widget child;
+
+  const ShimmerEffect({super.key, required this.child});
+
+  @override
+  State<ShimmerEffect> createState() => _ShimmerEffectState();
+}
+
+class _ShimmerEffectState extends State<ShimmerEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              colors: [
+                Colors.grey.shade300,
+                Colors.grey.shade100,
+                Colors.grey.shade300,
+              ],
+              stops: const [0.0, 0.5, 1.0],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              transform: _SlidingGradientTransform(slidePercent: _controller.value),
+            ).createShader(bounds);
+          },
+          child: child,
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
+class _SlidingGradientTransform extends GradientTransform {
+  final double slidePercent;
+
+  const _SlidingGradientTransform({required this.slidePercent});
+
+  @override
+  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
+    return Matrix4.translationValues(bounds.width * (slidePercent - 0.5) * 2, 0.0, 0.0);
   }
 }
